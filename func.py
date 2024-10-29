@@ -139,3 +139,8 @@ def calc_cov(df):
     #      'volume': tmp_df4[:, 4]})
     cov_df.set_index([df_tmp_cols], inplace=True)
     return cov_df
+
+def centering_df(df):
+    for i in df.columns:
+        col_mean = df[i].mean()
+        df[i] = df[i] - col_mean
