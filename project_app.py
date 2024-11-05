@@ -27,7 +27,7 @@ cleaned_dataset['scheduled_time']=pd.to_datetime(cleaned_dataset['scheduled_time
 cleaned_dataset['actual_time']=pd.to_datetime(cleaned_dataset['actual_time'])
 print(cleaned_dataset.head())
 target_col=cleaned_dataset['delay_minutes']
-
+std_dataset=fn.standardized(cleaned_dataset)
 cleaned_dataset_encoded = pd.get_dummies(cleaned_dataset, columns=['status', 'line', 'type'] , drop_first=True, dtype=int)
 
 # train_df, train_target, test_df, test_target = train_test_split(cleaned_dataset,target_col,test_size=0.2)
@@ -58,13 +58,13 @@ plt.grid(axis='x')
 # plt.gca().invert_yaxis()
 plt.show()
 
-# threshold = 0.01  # Set same threshold as backward stepwise regression
+
 # selected_features_rf = feature_importances_sorted[feature_importances_sorted > threshold].index.tolist()
 # eliminated_features_rf = feature_importances_sorted[feature_importances_sorted <= threshold].index.tolist()
 
 X_train_rf_const = sm.add_constant(train_df_numeric)
 ols_model_rf = sm.OLS(train_target, X_train_rf_const).fit()
-X_test_rf_const = sm.add_constant(train_df_numeric)
+X_test_rf_const = sm.add_constant(test_df_numeric)
 RF_pred_sales = ols_model_rf.predict(X_test_rf_const)
 # rf_pred_sales_reverse=inverse_std(RF_pred_sales, test_mean, test_std)
 # plt.plot(np.arange(len(test_target)),test_target, label='Original Sales')
@@ -74,8 +74,21 @@ RF_pred_sales = ols_model_rf.predict(X_test_rf_const)
 # plt.grid(True)
 # plt.show()
 
-# mse_rf = round(mean_squared_error(test_target, RF_pred_sales),3)
+mse_rf = round(mean_squared_error(test_target, RF_pred_sales),3)
+rf_metrics={
+'R-squared': ols_model_rf.rsquared,
+'Adjusted R-squared': ols_model_rf.rsquared_adj,
+'AIC': ols_model_rf.aic,
+'BIC': ols_model_rf.bic,
+'MSE': mse_rf
+}
+# print(rf_metrics)
+print(f"\nRandom Forest Metrics\nR-Squared: {round(ols_model_rf.rsquared,3)}\nAdjusted R-Squared: {round(ols_model_rf.rsquared_adj,3)}\nAIC: {round(ols_model_rf.aic,3)},\nBIC: {round(ols_model_rf.bic,3)}\nMean Squared Error: {round(mse_rf,3)}")
 
+train_df, test_df, train_target, test_target = train_test_split(std_dataset.drop(columns=['delay_minutes']),
+                                                                std_dataset['delay_minutes'],
+                                                                test_size=0.2,
+                                                                random_state=5805)
 
 pca = PCA()
 # carseat_train_pca = pca.fit_transform(X_dummy)
@@ -83,18 +96,18 @@ train_df_pca = pca.fit_transform(train_df_numeric)
 explained_variance = np.cumsum(pca.explained_variance_ratio_)
 
 
-# n_components_95 = np.argmax(explained_variance >= 0.95) + 1
-# print(f"\nNumber of components explaining more than 95% variance: {n_components_95}")
-#
-# plt.plot(np.arange(1, len(explained_variance) + 1), explained_variance, marker='o')
-# plt.axhline(y=0.95, color='g', linestyle='--')
-# plt.axvline(x=n_components_95, color='g', linestyle='--')
-# plt.title('PCA - Cumulative explained variance versus the number of features.')
-# plt.xlabel('Number of Features')
-# plt.ylabel('Cumulative Explained Variance')
-# plt.xticks(np.arange(1,len(explained_variance)+1))
-# plt.grid(True)
-# plt.show()
+n_components_95 = np.argmax(explained_variance >= 0.95) + 1
+print(f"\nNumber of components explaining more than 95% variance: {n_components_95}")
+
+plt.plot(np.arange(1, len(explained_variance) + 1), explained_variance, marker='o')
+plt.axhline(y=0.95, color='g', linestyle='--')
+plt.axvline(x=n_components_95, color='g', linestyle='--')
+plt.title('PCA - Cumulative explained variance versus the number of features.')
+plt.xlabel('Number of Features')
+plt.ylabel('Cumulative Explained Variance')
+plt.xticks(np.arange(1,len(explained_variance)+1))
+plt.grid(True)
+plt.show()
 
 #Standardizing the dataset
 # std_dataset=fn.standardized(cleaned_dataset)
@@ -102,3 +115,6 @@ explained_variance = np.cumsum(pca.explained_variance_ratio_)
 # #Performing Single value decomposition on the dataset
 # U,S,Vh=np.linalg.svd(cleaned_dataset)
 # print(U,S,Vh)
+
+# covariance_mat=fn.cov_matrix(cleaned_dataset)
+# print(covariance_mat)

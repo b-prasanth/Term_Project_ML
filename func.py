@@ -1,6 +1,12 @@
+from imblearn.over_sampling import SMOTE
+from sklearn.datasets import make_classification
+from sklearn.metrics import accuracy_score, confusion_matrix, ConfusionMatrixDisplay, roc_curve, roc_auc_score, auc
+from sklearn.model_selection import train_test_split, GridSearchCV
+from sklearn.linear_model import LogisticRegression
 import numpy as np
 import pandas as pd
 import math
+import matplotlib.pyplot as plt
 
 #Function to calculate standard deviation.
 def calc_std(df_col, df):
@@ -144,3 +150,93 @@ def centering_df(df):
     for i in df.columns:
         col_mean = df[i].mean()
         df[i] = df[i] - col_mean
+
+def calc_model_row_prob(col1, col2, beta0, beta1, beta2):
+    # print(col1, col2, beta1, beta2, beta0)
+    exp=beta0+(col1 * beta1)+(col2*beta2)
+    probability=1/(1+np.exp(-exp))
+    return probability
+
+def calc_accuracy_recall_precision(TP, TN, FP, FN):
+    Recall=TP/(TP+FN)
+    Precision=TP/(TP+FP)
+    accuracy=(TP+TN)/(TP+TN+FP+FN)
+    return Recall, Precision, accuracy
+
+def calc_sigma_z(z):
+    sigma_z=1/(1+np.exp(-z))
+    return sigma_z
+
+def calc_cross_entropy(y,sigma_Z):
+    cross_entropy=-(y * np.log(sigma_Z) + (1 - y) * np.log(1 - sigma_Z))
+    return cross_entropy
+
+def do_smote(DF1):
+    smote_oversample = SMOTE(random_state=5805)
+    X_Smote, Y_Smote = smote_oversample.fit_resample(DF1.drop(columns='Direction'), DF1['Direction'])
+
+    smote_up = 0
+    smote_down = 0
+    for i in range(len(Y_Smote)):
+        if Y_Smote[i] == 'Up':
+            smote_up += 1
+        elif Y_Smote[i] == 'Down':
+            smote_down += 1
+
+    if smote_up == smote_down:
+        print(f"After using SMOTE method\nUp:{smote_up}\nDown:{smote_down}\n\nEnd of Question 4a")
+        pd.Series(Y_Smote).value_counts().plot(kind='bar', color=['blue', 'orange'])
+        plt.title("Balanced dataset using smote method")
+        plt.xticks(rotation=0)
+        plt.ylabel('Count')
+        plt.xlabel('Direction')
+        plt.grid(axis='y')
+        plt.show()
+        return X_Smote, Y_Smote
+
+def do_lin_reg(xtrain,xtest,ytrain,ytest):
+    model = LogisticRegression(random_state=5805)
+    model.fit(xtrain, ytrain)
+    train_score=model.score(xtrain,ytrain)
+    test_score=model.score(xtest,ytest)
+    Y_pred = model.predict(xtest)
+    y_proba = model.predict_proba(xtest)[:, 1]
+    TP, TN, FP, FN=do_roc_auc(ytest,y_proba,Y_pred)
+    model_recall, model_precision, model_accuracy = calc_accuracy_recall_precision(TP, TN, FP, FN)
+    return model_recall, model_precision, model_accuracy, train_score, test_score
+
+def do_roc_auc(ytest,y_proba,Y_pred):
+    FPR, TPR, thresholds = roc_curve(ytest, y_proba)
+    AUC = auc(FPR, TPR)
+    plt.figure(figsize=(12, 8))
+    plt.plot(FPR, TPR, color='blue', linestyle='--', label=f'ROC curve (AUC = {AUC:.2f})')
+    plt.plot([0, 1], [0, 1], 'k--', label='Chance')
+    plt.xlabel('False Positive Rate')
+    plt.ylabel('True Positive Rate')
+    plt.title('Receiver Operating Characteristic (ROC) Curve')
+    plt.legend(loc='lower right')
+    plt.show()
+
+    confusion_matrix_op = confusion_matrix(ytest, Y_pred)
+    TN = confusion_matrix_op[0, 0]
+    FP = confusion_matrix_op[0, 1]
+    TP = confusion_matrix_op[1, 1]
+    FN = confusion_matrix_op[1, 0]
+
+    conf_mat_plot = ConfusionMatrixDisplay(confusion_matrix=confusion_matrix_op)
+    conf_mat_plot.plot()
+    plt.show()
+    return TP, TN, FP, FN
+
+def plt_conf_matrix(x,y):
+    confusion_matrix_op = confusion_matrix(x, y)
+    conf_mat_plot = ConfusionMatrixDisplay(confusion_matrix=confusion_matrix_op)
+    conf_mat_plot.plot()
+    plt.show()
+
+def cov_matrix(matrix1):
+    rand_tmp = matrix1.to_numpy(dtype=np.float64)
+    tmp2 = matrix_multiply(matrix_of_ones(rand_tmp), rand_tmp) / len(rand_tmp)
+    cont_random_df3 = rand_tmp - tmp2
+    cont_random_df4 = matrix_multiply(matrix_transpose(cont_random_df3), cont_random_df3) / ((len(rand_tmp) - 1))
+    return cont_random_df4
