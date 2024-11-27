@@ -7,6 +7,7 @@ import numpy as np
 import pandas as pd
 import math
 import matplotlib.pyplot as plt
+import statsmodels.api as sm
 
 #Function to calculate standard deviation.
 def calc_std(df_col, df):
@@ -29,6 +30,19 @@ def calc_mean(df_col,df):
 def standardized(df):
     standardized_dataset=df
     ignor_cols=['ShelveLoc_Good', 'ShelveLoc_Medium', 'US_Yes', 'Urban_Yes']
+    numeric_cols=standardized_dataset.select_dtypes(include=['int64',
+    'float64','number']).columns
+    for cols in numeric_cols:
+        if cols not in ignor_cols:
+            standardized_dataset[cols]=((standardized_dataset[cols]-
+            calc_mean(cols,df))/calc_std(cols,df))
+        else:
+            continue
+    return standardized_dataset
+
+def standardized_new(df, cols):
+    standardized_dataset=df
+    ignor_cols=cols
     numeric_cols=standardized_dataset.select_dtypes(include=['int64',
     'float64','number']).columns
     for cols in numeric_cols:
@@ -240,3 +254,71 @@ def cov_matrix(matrix1):
     cont_random_df3 = rand_tmp - tmp2
     cont_random_df4 = matrix_multiply(matrix_transpose(cont_random_df3), cont_random_df3) / ((len(rand_tmp) - 1))
     return cont_random_df4
+
+def backward_elimination(df_col, target, threshold=0.01):
+    num_features = len(df_col.columns)
+    bse_selected_features = list(df_col.columns)
+    bse_eliminated_features = []
+
+    while num_features > 0:
+        df_col_const = sm.add_constant(df_col[bse_selected_features])
+        OLS_OP = sm.OLS(target, df_col_const).fit()
+        max_p_value = max(OLS_OP.pvalues)
+
+        if max_p_value > threshold:
+            feature_to_remove = OLS_OP.pvalues.idxmax()
+            bse_selected_features.remove(feature_to_remove)
+            bse_eliminated_features.append({
+                'Feature Eliminated': feature_to_remove,
+                'AIC': OLS_OP.aic,
+                'BIC': OLS_OP.bic,
+                'Adjusted R2': OLS_OP.rsquared_adj,
+                'p-value': max_p_value
+            })
+            num_features -= 1
+        else:
+            break
+
+    bse_eliminated_features_table = pd.DataFrame(bse_eliminated_features)
+    return bse_selected_features, bse_eliminated_features_table
+
+def plotCorrelationMatrix(df, graphWidth):
+    # df = df.dropna('columns') # drop columns with NaN
+    df = df[[col for col in df if df[col].nunique() > 1]] # keep columns where there are more than 1 unique values
+    if df.shape[1] < 2:
+        print(f'No correlation plots shown: The number of non-NaN or constant columns ({df.shape[1]}) is less than 2')
+        return
+    corr = df.corr()
+    plt.figure(num=None, figsize=(graphWidth, graphWidth), dpi=80, facecolor='w', edgecolor='k')
+    corrMat = plt.matshow(corr, fignum = 1)
+    plt.xticks(range(len(corr.columns)), corr.columns, rotation=90)
+    plt.yticks(range(len(corr.columns)), corr.columns)
+    plt.gca().xaxis.tick_bottom()
+    plt.colorbar(corrMat)
+    plt.title(f'Correlation Matrix', fontsize=15)
+    plt.show()
+
+def stepwise_selection(X, y, threshold_in=0.05, threshold_out=0.10):
+    included = []
+    while True:
+        changed = False
+        excluded = list(set(X.columns) - set(included))
+        new_pval = pd.Series(index=excluded)
+        for new_column in excluded:
+            model = sm.OLS(y, sm.add_constant(pd.DataFrame(X[included + [new_column]]))).fit()
+            new_pval[new_column] = model.pvalues[new_column]
+        best_pval = new_pval.min()
+        if best_pval < threshold_in:
+            best_feature = new_pval.idxmin()
+            included.append(best_feature)
+            changed = True
+        model = sm.OLS(y, sm.add_constant(pd.DataFrame(X[included]))).fit()
+        pvalues = model.pvalues.iloc[1:]
+        worst_pval = pvalues.max()
+        if worst_pval > threshold_out:
+            worst_feature = pvalues.idxmax()
+            included.remove(worst_feature)
+            changed = True
+        if not changed:
+            break
+    return included
