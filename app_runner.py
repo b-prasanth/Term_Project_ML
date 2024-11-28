@@ -5,6 +5,11 @@ import exp_data_analysis as eda
 import Data_Preprocessing as dp
 import numpy as np
 import regression_analysis as ra
+from pandas_profiling import ProfileReport
+import matplotlib.pyplot as plt
+import seaborn as sns
+import base64
+from io import BytesIO
 
 #Load data and Clean data
 data, from_dict, to_dict=dp.load_data()
@@ -13,6 +18,9 @@ data_cleaned=dp.clean_data(data)
 #Show EDA graphs
 # eda.aggregate_data(data_cleaned)
 # eda.do_eda_graphs(data_cleaned)
+
+#Generate eda profiling report
+# eda.do_eda_profiling(data_cleaned.drop(columns=['arrival_minutes']))
 
 #Perform encoding and Split into test and train
 data_cleaned=dp.data_encode(data_cleaned)

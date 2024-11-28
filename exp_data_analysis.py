@@ -2,7 +2,9 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
-
+import base64
+from io import BytesIO
+from pandas_profiling import ProfileReport
 
 def aggregate_data(data_cleaned):
     # Aggregation: Average delay by time of the day
@@ -57,3 +59,46 @@ def do_eda_graphs(cleaned_dataset):
     week_av_delay = cleaned_dataset.groupby(cleaned_dataset['day_of_weeks'], as_index=False)['delay_minutes'].mean()
     week_av_delay['num'] = [5, 1, 6, 7, 4, 2, 3]
     print("\nAverage delay on each day of the week\n", week_av_delay.sort_values(by='num',ascending=True))
+
+def do_eda_profiling(data_cleaned):
+    profile = ProfileReport(
+        data_cleaned,
+        title="EDA Report for Arrival Delay Analysis",
+        explorative=True
+    )
+
+    # Save the profiling report
+    profile_file = "eda_report.html"
+    profile.to_file(profile_file)
+
+    # Create a covariance heatmap using Seaborn
+    numeric_data = data_cleaned.select_dtypes(include=[np.number])
+    cov_matrix = numeric_data.cov()
+
+    plt.figure(figsize=(10, 8))
+    sns.heatmap(cov_matrix, annot=True, fmt=".2f", cmap="coolwarm", center=0)
+    plt.title("Covariance Heatmap")
+
+    # Save the heatmap to a base64-encoded image
+    buffer = BytesIO()
+    plt.savefig(buffer, format="png", bbox_inches="tight")
+    buffer.seek(0)
+    encoded_heatmap = base64.b64encode(buffer.read()).decode("utf-8")
+    buffer.close()
+
+    # Inject the heatmap into the HTML report
+    heatmap_html = f"""
+    <h2 style="text-align: center;">Covariance Heatmap</h2>
+    <div style="text-align: center;">
+        <img src="data:image/png;base64,{encoded_heatmap}" alt="Covariance Heatmap" />
+    </div>
+    """
+
+    # Add the heatmap HTML content to the report
+    with open(profile_file, "r+") as eda_file:
+        content = eda_file.read()
+        # Insert the heatmap HTML content before the end of the report
+        updated_content = content.replace("</body>", heatmap_html + "</body>")
+        eda_file.seek(0)
+        eda_file.write(updated_content)
+        eda_file.truncate()
