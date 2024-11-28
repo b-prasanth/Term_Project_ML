@@ -8,6 +8,7 @@ import pandas as pd
 import math
 import matplotlib.pyplot as plt
 import statsmodels.api as sm
+import seaborn as sns
 
 #Function to calculate standard deviation.
 def calc_std(df_col, df):
@@ -322,3 +323,21 @@ def stepwise_selection(X, y, threshold_in=0.05, threshold_out=0.10):
         if not changed:
             break
     return included
+
+def plot_cov_matrix(df):
+    cov_matrix = df.cov()
+    plt.subplot(1, 2, 1)  # 1 row, 2 columns, first subplot
+    sns.heatmap(cov_matrix, annot=True, cmap="coolwarm", fmt=".2f", linewidths=0.5)
+    plt.title('Sample Covariance Matrix')
+    plt.tight_layout()
+    plt.show()
+
+def plot_corr_matrix(df):
+    corr_matrix = df.corr()
+    plt.subplot(1, 2, 2)  # 1 row, 2 columns, second subplot
+    sns.heatmap(corr_matrix, annot=True, cmap="coolwarm", fmt=".2f", linewidths=0.5)
+    plt.title('Pearson Correlation Matrix')
+
+    # Display the heatmaps
+    plt.tight_layout()
+    plt.show()
