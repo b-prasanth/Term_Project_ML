@@ -4,6 +4,7 @@ import func as fn
 import exp_data_analysis as eda
 import Data_Preprocessing as dp
 import numpy as np
+import regression_analysis as ra
 
 #Load data and Clean data
 data, from_dict, to_dict=dp.load_data()
@@ -53,3 +54,7 @@ X_test = X_test.select_dtypes(include=[np.number])
 #Check if dataset is balanced
 # class_counts, X_resampled, y_resampled=fs.check_balance(selected_X, y)
 # pf.display_balance_plot(class_counts)
+
+#Backward stepwise regression
+ra.do_stepwise_regression(data_cleaned, 'arrival_minutes')
+# ra.stepwise_metrics(X_train, y_train, X_test, y_test)

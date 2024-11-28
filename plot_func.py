@@ -44,3 +44,16 @@ def display_balance_plot(class_counts):
     plt.xticks(rotation=0)
     plt.xticks([0,1,2], labels=['delayed','on-time','early'])
     plt.show()
+
+def plot_stepwise(y_train, y_test, y_pred):
+    # Plot train, test, and predicted values
+    plt.figure(figsize=(10, 6))
+    plt.plot(y_train.values, label='Train', alpha=0.7)
+    plt.plot(range(len(y_train), len(y_train) + len(y_test)), y_test.values, label='Test', alpha=0.7)
+    plt.plot(range(len(y_train), len(y_train) + len(y_pred)), y_pred, label='Predicted', alpha=0.7, linestyle='--')
+    plt.xlabel('Index')
+    plt.ylabel('Target Variable')
+    plt.title('Train, Test, and Predicted Values')
+    plt.legend()
+    plt.grid()
+    plt.show()
