@@ -56,5 +56,6 @@ X_test = X_test.select_dtypes(include=[np.number])
 # pf.display_balance_plot(class_counts)
 
 #Backward stepwise regression
-ra.do_stepwise_regression(data_cleaned, 'arrival_minutes')
-# ra.stepwise_metrics(X_train, y_train, X_test, y_test)
+# ra.do_stepwise_regression(data_cleaned, 'arrival_minutes')
+
+

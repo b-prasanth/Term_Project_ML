@@ -6,6 +6,42 @@ import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_squared_error
 import plot_func as pf
+import func as fn
+from tabulate import tabulate
+
+
+# T-test Analysis Function
+def t_test_analysis(model):
+    print("\nT-test Analysis Results:")
+    # Print the t-values and p-values for each coefficient (including the constant)
+    t_test_results = model.tvalues
+    p_values = model.pvalues
+    t_test_summary = pd.DataFrame({
+        't-value': t_test_results,
+        'p-value': p_values
+    })
+    print(t_test_summary)
+
+    # Checking which features have a p-value less than 0.05 (significant)
+    significant_features = t_test_summary[t_test_summary['p-value'] < 0.05]
+    print("\nSignificant Features (p-value < 0.05):")
+    print(significant_features)
+
+# F-test Analysis Function
+def f_test_analysis(model):
+    print("\nF-test Analysis Results:")
+    # F-statistic and associated p-value for the overall regression model
+    f_statistic = model.fvalue
+    f_p_value = model.f_pvalue
+
+    print(f"F-statistic: {f_statistic:.4f}")
+    print(f"p-value of F-statistic: {f_p_value:.4f}")
+
+    # If p-value < 0.05, the model is statistically significant
+    if f_p_value < 0.05:
+        print("The regression model is statistically significant.")
+    else:
+        print("The regression model is not statistically significant.")
 
 # Preprocess and Resample Function
 def preprocess_and_resample(df, target_column, time_column="scheduled_time", freq="D"):
@@ -29,7 +65,12 @@ def preprocess_and_resample(df, target_column, time_column="scheduled_time", fre
 
     # Drop rows with NaN after resampling
     df_resampled = df_resampled.dropna()
-
+    df_resampled.drop(columns=['delay_minutes'], inplace=True)
+    #Standardize dataset
+    # ig_cols = ['status_departed', 'status_estimated', 'line_Bergen Co. Line', 'line_Gladstone Branch', 'line_Main Line',
+    #            'line_Montclair-Boonton', 'line_Morristown Line', 'line_No Jersey Coast', 'line_Northeast Corrdr',
+    #            'line_Pascack Valley', 'line_Princeton Shuttle', 'line_Raritan Valley']
+    # df_resampled = fn.standardized_new(df_resampled, ig_cols)
     return df_resampled
 
 
@@ -38,6 +79,7 @@ def backward_stepwise_regression(X, y):
     variables = list(X.columns)
     removed_features = []
     metrics_table = []
+    selected_features = []
 
     while len(variables) > 0:
         X_with_const = sm.add_constant(X[variables])
@@ -69,11 +111,12 @@ def backward_stepwise_regression(X, y):
             variables.remove(feature_to_remove)
             removed_features.append(feature_to_remove)
         else:
+            selected_features=variables.copy()
             break
 
     # Create final metrics table
     metrics_df = pd.DataFrame(metrics_table)
-    return model, metrics_df, removed_features
+    return model, metrics_df, removed_features, selected_features
 
 
 # Confidence Interval Analysis
@@ -96,7 +139,7 @@ def do_stepwise_regression(df, target_column):
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=5805)
 
     # Backward stepwise regression
-    final_model, metrics_df, removed_features = backward_stepwise_regression(X_train, y_train)
+    final_model, metrics_df, removed_features, selected_features = backward_stepwise_regression(X_train, y_train)
 
     # Ensure X_test has only the features in the final model
     X_test_with_const = sm.add_constant(X_test[final_model.model.exog_names[1:]])
@@ -115,5 +158,19 @@ def do_stepwise_regression(df, target_column):
     # Plot Train, Test, and Predictions
     pf.plot_stepwise(y_train, y_test, y_pred)
 
+    # Perform T-test analysis
+    t_test_analysis(final_model)
+
+    # Perform F-test analysis
+    f_test_analysis(final_model)
+
     # Display metrics table
-    print("\nMetrics at Each Step of Backward Elimination:\n", metrics_df)
+    # Reset index and start from 1
+    metrics_df = metrics_df.reset_index(drop=True)
+    metrics_df.index = metrics_df.index + 1
+
+    metrics_table = tabulate(metrics_df, headers='keys', tablefmt='grid', floatfmt='.4f')
+    print("\nMetrics at Each Step of Backward Stepwise Elimination:\n", metrics_table)
+    print("\nSelected Features from Backward Stepwise Elimination:\n", selected_features)
+    print(f"\nMSE for the final model:\n{test_mse:.4f}" )
+    print(f"\nR-squared for final model:\n{test_r_squared:.4f}")
