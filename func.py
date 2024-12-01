@@ -341,3 +341,31 @@ def plot_corr_matrix(df):
     # Display the heatmaps
     plt.tight_layout()
     plt.show()
+
+#Function to calc ROC, AUC, Confusion Matrix
+def do_roc_auc(ytest,y_proba,Y_pred, model_name):
+    FPR, TPR, thresholds = roc_curve(ytest, y_proba)
+    AUC = auc(FPR, TPR)
+    plt.figure(figsize=(12, 8))
+    plt.plot(FPR, TPR, color='blue', linestyle='--', label=f'ROC curve (AUC = {AUC:.2f})')
+    plt.plot([0, 1], [0, 1], 'k--', label='Chance')
+    plt.xlabel('False Positive Rate')
+    plt.ylabel('True Positive Rate')
+    plt.title(f'ROC Curve for model: {model_name}')
+    plt.legend(loc='lower right')
+    plt.show()
+
+    confusion_matrix_op = confusion_matrix(ytest, Y_pred)
+    TN = confusion_matrix_op[0, 0]
+    FP = confusion_matrix_op[0, 1]
+    TP = confusion_matrix_op[1, 1]
+    FN = confusion_matrix_op[1, 0]
+
+    return TP, TN, FP, FN, confusion_matrix_op, AUC, FPR, TPR
+
+#Function to calculate Recall, Precision, Accuracy
+def calc_accuracy_recall_precision(TP, TN, FP, FN):
+    Recall=TP/(TP+FN)
+    Precision=TP/(TP+FP)
+    accuracy=(TP+TN)/(TP+TN+FP+FN)
+    return Recall, Precision, accuracy
