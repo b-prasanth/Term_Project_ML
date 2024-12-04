@@ -8,6 +8,7 @@ from sklearn.metrics import mean_squared_error
 import plot_func as pf
 import func as fn
 from tabulate import tabulate
+import env_config
 
 
 # T-test Analysis Function

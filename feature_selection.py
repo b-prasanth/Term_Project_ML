@@ -9,7 +9,7 @@ from sklearn.model_selection import GridSearchCV, train_test_split
 import math
 import statsmodels.api as sm
 import func as fn
-import tabulate
+from tabulate import tabulate
 from sklearn.preprocessing import LabelEncoder, StandardScaler
 from sklearn.covariance import EllipticEnvelope
 from sklearn.metrics import mean_squared_error, r2_score
@@ -30,6 +30,7 @@ def func_train_test_split(X,y):
     train_df, test_df, train_target, test_target = train_test_split(
         X,y,
         test_size=0.2,
+        stratify=y,
         random_state=5805)
     return train_df, test_df, train_target, test_target
 
@@ -72,6 +73,7 @@ def do_vif(cleaned_dataset_encoded,target):
     filtered_data = vif_data[vif_data['VIF'] < 5]
     print("\nVIF Number of Features", len(filtered_data))
     print("\nVIF Data:\n", filtered_data)
+    return filtered_data
 
 def do_svd(df2):
     # Standardize the data for better performance of SVD
@@ -143,22 +145,36 @@ def anomaly_outlier(data):
     anomalous_rows_iqr = data[anomalies_iqr.any(axis=1)]
     print("IQR Anomalies:\n", anomalous_rows_iqr)
 
-def check_balance(X, y):
+# def check_balance(X, y):
+#     class_counts = y.value_counts()
+#     proportions = class_counts / class_counts.sum()
+#     # Display counts and proportion of each class
+#     print("\nClass Distribution:\n", class_counts)
+#
+#     if proportions.nunique() == 1:
+#         print("Class distribution is equal.")
+#         return class_counts, X, y
+#     else:
+#         pf.display_balance_plot(class_counts)
+#         print("Class distribution is not equal.\nBalancing the dataset using SMOTE")
+#         X_resampled, y_resampled = perform_balance(X, y)
+#         class_counts, X_resampled, y_resampled=check_balance(X_resampled, y_resampled)
+#         return class_counts, X_resampled, y_resampled
+
+def check_balance(y):
+
     class_counts = y.value_counts()
     proportions = class_counts / class_counts.sum()
     # Display counts and proportion of each class
     print("\nClass Distribution:\n", class_counts)
-
     if proportions.nunique() == 1:
         print("Class distribution is equal.")
-        return class_counts, X, y
-    else:
         pf.display_balance_plot(class_counts)
-        print("Class distribution is not equal.\nBalancing the dataset using SMOTE")
-        X_resampled, y_resampled = perform_balance(X, y)
-        print("\nProportions of each class:")
-        check_balance(X_resampled, y_resampled)
-        # return class_counts, X_resampled, y_resampled
+        return class_counts,True
+    else:
+        print("\nClass distribution is not equal. Balancing the dataset...")
+        pf.display_balance_plot(class_counts)
+        return class_counts,False
 
 def perform_balance(X,y):
     smote = SMOTE(random_state=5805)

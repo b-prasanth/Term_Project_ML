@@ -1,5 +1,8 @@
 import pandas as pd
 import numpy as np
+from sklearn.preprocessing import LabelEncoder
+import env_config
+
 
 # Load dataset
 
@@ -55,4 +58,9 @@ def data_encode(data):
                                              columns=['status', 'line', 'type'],
                                              drop_first=True,
                                              dtype=int)
+
+    # label_encoder = LabelEncoder()
+    # cleaned_dataset_encoded=data
+    # cleaned_dataset_encoded['status'] = label_encoder.fit_transform(cleaned_dataset_encoded['status'])  # Encode target variable
+    # cleaned_dataset_encoded['line'] = label_encoder.fit_transform(cleaned_dataset_encoded['line'])  # Encode 'line' column
     return cleaned_dataset_encoded

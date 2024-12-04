@@ -1,5 +1,6 @@
 from imblearn.over_sampling import SMOTE
 from sklearn.datasets import make_classification
+from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import accuracy_score, confusion_matrix, ConfusionMatrixDisplay, roc_curve, roc_auc_score, auc
 from sklearn.model_selection import train_test_split, GridSearchCV
 from sklearn.linear_model import LogisticRegression
@@ -9,6 +10,11 @@ import math
 import matplotlib.pyplot as plt
 import statsmodels.api as sm
 import seaborn as sns
+from sklearn.preprocessing import LabelBinarizer
+from tensorflow.python.ops.gen_dataset_ops import model_dataset
+
+import env_config
+
 
 #Function to calculate standard deviation.
 def calc_std(df_col, df):
@@ -341,3 +347,134 @@ def plot_corr_matrix(df):
     # Display the heatmaps
     plt.tight_layout()
     plt.show()
+
+
+# Method to calculate and plot ROC Curve with AUC
+def plot_roc_curve_with_auc(y_test, y_pred_proba, model_name):
+    # Binarize the labels for multi-class classification
+    lb = LabelBinarizer()
+    y_test_bin = lb.fit_transform(y_test)
+
+    # Calculate ROC curve and AUC for the entire model using One-vs-Rest (OvR) strategy
+    fpr_all, tpr_all, _ = roc_curve(y_test_bin.ravel(), y_pred_proba.ravel())
+    roc_auc_all = auc(fpr_all, tpr_all)
+
+    # Plot combined ROC curve for the entire model
+    plt.figure()
+    plt.plot(fpr_all, tpr_all, color='b', label=f'Combined ROC Curve (AUC = {roc_auc_all:.2f})')
+
+    plt.plot([0, 1], [0, 1], 'k--')
+    plt.xlabel('False Positive Rate')
+    plt.ylabel('True Positive Rate')
+    plt.title(f'ROC Curve - {model_name}')
+    plt.legend(loc='lower right')
+    plt.show()
+    return roc_auc_all
+
+
+# Method to calculate precision, recall, accuracy and plot confusion matrix
+def calculate_metrics_and_plot_confusion_matrix(y_true, y_pred, num_classes, type, model_name):
+    # Initialize confusion matrix
+    confusion = confusion_matrix(y_true, y_pred)
+
+    # Plot Confusion Matrix
+    if type == "test":
+        plt.figure(figsize=(8, 6))
+        plt.imshow(confusion, cmap='Blues', interpolation='nearest')
+        plt.title(f'Confusion Matrix for {model_name} test dataset')
+        plt.colorbar()
+        ticks = np.arange(num_classes)
+        plt.xticks(ticks, labels=['early', 'on-time', 'delayed'])
+        plt.yticks(ticks, labels=['early', 'on-time', 'delayed'])
+        plt.xlabel('Predicted')
+        plt.ylabel('Actual')
+
+        # Display count inside the confusion matrix
+        for i in range(num_classes):
+            for j in range(num_classes):
+                plt.text(j, i, confusion[i, j], ha="center", va="center", color="black", fontsize=12)
+        plt.show()
+
+    # Initialize metrics
+    precision = []
+    recall = []
+    f1_score = []
+    specificity = []
+    accuracy = 0
+    total = len(y_true)
+
+    # To store weighted sums
+    weighted_precision_sum = 0
+    weighted_recall_sum = 0
+    weighted_f1_sum = 0
+    weighted_specificity_sum = 0
+    total_weight = 0  # For normalizing the weighted averages
+
+    # Count the total number of instances for each class (this will be the weight)
+    class_counts = np.sum(confusion, axis=1)
+
+    # Loop over each class
+    for i in range(num_classes):
+        tp = confusion[i][i]
+        fp = sum(confusion[:, i]) - tp
+        fn = sum(confusion[i, :]) - tp
+        tn = total - (tp + fp + fn)
+
+        # Precision and Recall
+        precision_i = tp / (tp + fp) if (tp + fp) != 0 else 0
+        recall_i = tp / (tp + fn) if (tp + fn) != 0 else 0
+
+        precision.append(precision_i)
+        recall.append(recall_i)
+
+        # F1-Score: harmonic mean of precision and recall
+        if (precision_i + recall_i) != 0:
+            f1_score_i = 2 * (precision_i * recall_i) / (precision_i + recall_i)
+        else:
+            f1_score_i = 0
+        f1_score.append(f1_score_i)
+
+        # Specificity (True Negative Rate)
+        specificity_i = tn / (tn + fp) if (tn + fp) != 0 else 0
+        specificity.append(specificity_i)
+
+        # Accuracy
+        accuracy += tp
+
+        # Calculate weighted sums
+        weight = class_counts[i]  # Number of true instances for this class
+        total_weight += weight
+        weighted_precision_sum += precision_i * weight
+        weighted_recall_sum += recall_i * weight
+        weighted_f1_sum += f1_score_i * weight
+        weighted_specificity_sum += specificity_i * weight
+
+    # Final accuracy calculation
+    accuracy = accuracy / total
+
+    # Calculate weighted averages
+    weighted_precision = weighted_precision_sum / total_weight
+    weighted_recall = weighted_recall_sum / total_weight
+    weighted_f1_score = weighted_f1_sum / total_weight
+    weighted_specificity = weighted_specificity_sum / total_weight
+
+    return (
+        weighted_precision, weighted_recall, accuracy, weighted_f1_score, weighted_specificity, confusion
+    )
+
+
+def evaluate_model(X_train, X_test, y_train, y_test):
+    model=LogisticRegression(max_iter=1000, random_state=5805)
+    model.fit(X_train, y_train)
+    score = model.score(X_test, y_test)
+    return score
+
+def rf_feature_importance(X_train,y_train):
+    rf=RandomForestClassifier(n_estimators=100, random_state=5805)
+    rf.fit(X_train, y_train)
+    importances = rf.feature_importances_
+    feature_importance_df=pd.DataFrame({
+        'Features':X_train.columns,
+        'Importance':importances
+    }).sort_values(by='Importance', ascending=False)
+    return feature_importance_df
