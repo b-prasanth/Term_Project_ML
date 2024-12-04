@@ -11,7 +11,6 @@ import matplotlib.pyplot as plt
 import statsmodels.api as sm
 import seaborn as sns
 from sklearn.preprocessing import LabelBinarizer
-from tensorflow.python.ops.gen_dataset_ops import model_dataset
 
 import env_config
 
