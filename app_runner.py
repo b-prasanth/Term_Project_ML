@@ -3,7 +3,6 @@ from datetime import datetime
 import feature_selection as fs
 import func as fn
 import exp_data_analysis as eda
-import Data_Preprocessing as dp
 import numpy as np
 import regression_analysis as ra
 import matplotlib.pyplot as plt
@@ -23,15 +22,15 @@ def phase_1():
     # Load data and Clean data
     print('-' * 50 + " Phase 1 " + '-' * 50)
 
-    data, from_dict, to_dict = dp.load_data()
-    data_cleaned = dp.clean_data(data)
+    data, from_dict, to_dict = eda.load_data()
+    data_cleaned = eda.clean_data(data)
 
-    # Show EDA graphs
+    # # Show EDA graphs
     eda.aggregate_data(data_cleaned)
     eda.do_eda_graphs(data_cleaned)
 
     # Perform encoding and Split into test and train
-    data_cleaned = dp.data_encode(data_cleaned)
+    data_cleaned = eda.data_encode(data_cleaned)
     target_col = 'arrival_status'
 
     X = data_cleaned.drop(columns=target_col)
@@ -70,6 +69,9 @@ def phase_1():
 
     # SVD
     cumulative_variance, _, top_features_svd = fs.do_svd(data_cleaned)
+
+    #Check for anomaly and remove
+    # fs.anomaly_outlier(data_cleaned)
 
     # Evaluate model performance with each feature selection method
     rf_accuracy = fs.evaluate_model(X_train[selected_features_rf], X_test[selected_features_rf], y_train, y_test)
@@ -110,12 +112,10 @@ def phase_1():
     if is_balanced is False:
         balanced_df = cla.preprocess_and_balance(pre_processed_df, datetime_col='scheduled_time', target_col='arrival_status', balance_method='oversample')
         class_counts, is_balanced=fs.check_balance(balanced_df[target_col])
-            # pf.display_balance_plot(class_counts)
 
-
-        # print(pre_processed_df.head())
-        # print(balanced_df.head())
     balanced_df.drop(columns=['month', 'day', 'hour', 'day_of_week'], inplace=True)
+    pre_processed_df.drop(columns=['month', 'day', 'hour', 'day_of_week'], inplace=True)
+    eda.do_eda_profiling(data_cleaned)
     print('-' * 50 + " End of Phase 1 " + '-' * 50)
     return balanced_df, pre_processed_df, data_cleaned
 
@@ -247,10 +247,10 @@ def phase_3(balanced_df, target_col):
     cla.random_forest_boosting(X_train, X_test, y_train, y_test)
     print('-' * 50 + " Random Forest Classifier - Stacking " + '-' * 50)
     cla.random_forest_stacking(X_train, X_test, y_train, y_test)
-    # print('-' * 50 + " Support Vector Machine " + '-' * 50)
+    print('-' * 50 + " Support Vector Machine " + '-' * 50)
     # cla.run_svm(X_train, X_test, y_train, y_test)
     # cla.run_svm_with_grid_search(X_train, X_test, y_train, y_test)
-    # cla.svm_classifier(X_train, X_test, y_train, y_test)
+    cla.svm_classifier(X_train, X_test, y_train, y_test)
     print('-' * 50 + " Metrics from all classifiers " + '-' * 50)
     cla.display_metrics()
     print('-' * 50 + " End of Phase 3 " + '-' * 50)

@@ -410,7 +410,7 @@ def naive_bayes(X_train, X_test, y_train, y_test):
 
     # print(f"\nBelow are the metrics for Naive Bayes Grid Search:\n")
     metrics.append( {
-        'model': 'Naive Bayes Grid Search',
+        'model': 'Naive Bayes',
         'Training Accuracy': train_accuracy,
         'Test Accuracy': test_accuracy,
         'Training Precision': train_precision,
@@ -486,7 +486,7 @@ def neural_networks(X_train, X_test, y_train, y_test):
 
     # print(f"\nBelow are the metrics for Neural Networks Grid Search:\n")
     metrics.append({
-        'model': 'Neural Networks Grid Search',
+        'model': 'Neural Networks - MultiLayered Perceptron',
         'Training Accuracy': train_accuracy,
         'Test Accuracy': test_accuracy,
         'Training Precision': train_precision,
@@ -511,108 +511,30 @@ def neural_networks(X_train, X_test, y_train, y_test):
     return metrics
 
 
-# def svm_classifier(X_train, X_test, y_train, y_test):
-#
-#     # param_grid = {
-#     #     'kernel': ['linear','poly','rbf']
-#     # }
-#
-#     start_time = datetime.now()
-#     print("\nSVM Grid Search Start-time:", start_time)
-#
-#     # svm = RandomizedSearchCV(SVC(probability=True, random_state=5805), param_distributions=param_grid, n_iter=10, cv=5,
-#     #                          n_jobs=-1, verbose=1)
-#     # svm=GridSearchCV(SVC(probability=True, random_state=5805), param_grid=param_grid, scoring='accuracy',cv=5, n_jobs=-1, verbose=1)
-#     param_grid = {
-#         'C': [0.1, 1, 10, 100],  # Regularization parameter
-#         'kernel': ['linear'],  # Linear kernel
-#     }
-#     svm = GridSearchCV(SVC(probability=True, random_state=5805), param_grid=param_grid, scoring='accuracy', cv=5, n_jobs=-1, verbose=1)
-#     svm.fit(X_train, y_train)
-#
-#     best_svc = svm.best_estimator_
-#
-#     # Train and Test Accuracy for MLP
-#     train_accuracy = accuracy_score(y_train, best_svc.predict(X_train))
-#     test_accuracy = accuracy_score(y_test, best_svc.predict(X_test))
-#
-#     y_train_pred = best_svc.predict(X_train)
-#     y_test_pred = best_svc.predict(X_test)
-#     y_pred_proba = best_svc.predict_proba(X_test)
-#
-#     # Calculate Metrics and Plot Confusion Matrix
-#     train_precision, train_recall, train_accuracy, train_specificity, train_f1_score, train_conf_mat = fn.calculate_metrics_and_plot_confusion_matrix(
-#         y_train, y_train_pred, len(np.unique(y_train)), 'train', 'SVM')
-#     test_precision, test_recall, test_accuracy, test_specificity, test_f1_score, test_conf_mat = fn.calculate_metrics_and_plot_confusion_matrix(
-#         y_test, y_test_pred, len(np.unique(y_test)), 'test', 'SVM')
-#
-#     auc = fn.plot_roc_curve_with_auc(y_test, y_pred_proba, 'SVM')
-#
-#     print(f"\nBelow are the metrics for SVM Grid Search:\n")
-#     metrics.append( {
-#         'model': 'Neural Networks Grid Search',
-#         'Training Accuracy': train_accuracy,
-#         'Test Accuracy': test_accuracy,
-#         'Training Precision': train_precision,
-#         'Test Precision': test_recall,
-#         'AUC': auc,
-#         'Training Recall': train_recall,
-#         'Test Recall': test_recall,
-#         'Training Specificity': train_specificity,
-#         'Test Specificity': test_specificity,
-#         'Training F1 Score': train_f1_score,
-#         'Test F1 Score': test_f1_score,
-#         'Confusion Matrix': test_conf_mat
-#     })
-#
-#     print(metrics)
-#     end_time = datetime.now()
-#     print("\nSVM Grid Search end-time:", end_time)
-#     print("\nSVM Grid Search time taken:", end_time - start_time)
-#
-#     return metrics
-#
-
 def svm_classifier(X_train, X_test, y_train, y_test):
-    # Suppress unnecessary warnings
-    warnings.filterwarnings('ignore', category=FutureWarning)
+
+    # param_grid = {
+    #     'kernel': ['linear','poly','rbf']
+    # }
 
     start_time = datetime.now()
-    print("\nSVM Random Search Start-time:", start_time)
+    print("\nSVM Grid Search Start-time:", start_time)
 
-    # Standardize the data
-    # scaler = StandardScaler()
-    # X_train = scaler.fit_transform(X_train)
-    # X_test = scaler.transform(X_test)
-    #
-    # # Hyperparameters to tune
-    # param_dist = {
-    #     'C': [0.1, 1, 10, 100, 1000],  # Regularization parameter
-    #     'kernel': ['linear']  # Linear kernel only
-    # }
-    #
-    # # Use RandomizedSearchCV instead of GridSearchCV for faster hyperparameter tuning
-    # svm = RandomizedSearchCV(SVC(probability=True, random_state=5805), param_distributions=param_dist, n_iter=10,
-    #                          cv=5, scoring='accuracy', n_jobs=-1, verbose=0, random_state=5805)
-    #
-    # # Fit the model
-    # svm.fit(X_train, y_train)
-    #
+    # svm = RandomizedSearchCV(SVC(probability=True, random_state=5805), param_distributions=param_grid, n_iter=10, cv=5,
+    #                          n_jobs=-1, verbose=1)
+    # svm=GridSearchCV(SVC(probability=True, random_state=5805), param_grid=param_grid, scoring='accuracy',cv=5, n_jobs=-1, verbose=1)
     param_grid = {
-        'C': [0.1, 1, 10],
-        'kernel': ['linear', 'poly', 'rbf']
+        'kernel': ['rbf'],  # Linear kernel
     }
-    svm = GridSearchCV(SVC(probability=True, random_state=5805), param_grid, cv=StratifiedKFold(n_splits=5, shuffle=True, random_state=5805), scoring='accuracy')
+    svm = GridSearchCV(SVC(probability=True, random_state=5805), param_grid=param_grid, scoring='accuracy', cv=5, n_jobs=-1, verbose=3)
     svm.fit(X_train, y_train)
-    print(f"Best Parameters for SVM: {svm.best_params_}")
-    # Best SVM model from RandomizedSearchCV
+
     best_svc = svm.best_estimator_
 
-    # Train and Test Accuracy
+    # Train and Test Accuracy for MLP
     train_accuracy = accuracy_score(y_train, best_svc.predict(X_train))
     test_accuracy = accuracy_score(y_test, best_svc.predict(X_test))
 
-    # Predictions and probabilities
     y_train_pred = best_svc.predict(X_train)
     y_test_pred = best_svc.predict(X_test)
     y_pred_proba = best_svc.predict_proba(X_test)
@@ -625,9 +547,9 @@ def svm_classifier(X_train, X_test, y_train, y_test):
 
     auc = fn.plot_roc_curve_with_auc(y_test, y_pred_proba, 'SVM')
 
-    print(f"\nBelow are the metrics for SVM Random Search:\n")
-    metrics.append({
-        'model': 'SVM Random Search',
+    print(f"\nBelow are the metrics for SVM Grid Search:\n")
+    metrics.append( {
+        'model': 'SVM',
         'Training Accuracy': train_accuracy,
         'Test Accuracy': test_accuracy,
         'Training Precision': train_precision,
@@ -643,11 +565,90 @@ def svm_classifier(X_train, X_test, y_train, y_test):
     })
 
     # print(metrics)
+    print(f"SVM - Train Accuracy: {train_accuracy:.3f}")
+    print(f"SVM - Test Accuracy: {test_accuracy:.3f}")
     end_time = datetime.now()
-    print("\nSVM Random Search end-time:", end_time)
-    print("\nSVM Random Search time taken:", end_time - start_time)
+    print("\nSVM Grid Search end-time:", end_time)
+    print("\nSVM Grid Search time taken:", end_time - start_time)
 
     return metrics
+
+
+# def svm_classifier(X_train, X_test, y_train, y_test):
+#     # Suppress unnecessary warnings
+#     warnings.filterwarnings('ignore', category=FutureWarning)
+#
+#     start_time = datetime.now()
+#     print("\nSVM Random Search Start-time:", start_time)
+#
+#     # Standardize the data
+#     # scaler = StandardScaler()
+#     # X_train = scaler.fit_transform(X_train)
+#     # X_test = scaler.transform(X_test)
+#     #
+#     # # Hyperparameters to tune
+#     # param_dist = {
+#     #     'C': [0.1, 1, 10, 100, 1000],  # Regularization parameter
+#     #     'kernel': ['linear']  # Linear kernel only
+#     # }
+#     #
+#     # # Use RandomizedSearchCV instead of GridSearchCV for faster hyperparameter tuning
+#     # svm = RandomizedSearchCV(SVC(probability=True, random_state=5805), param_distributions=param_dist, n_iter=10,
+#     #                          cv=5, scoring='accuracy', n_jobs=-1, verbose=0, random_state=5805)
+#     #
+#     # # Fit the model
+#     # svm.fit(X_train, y_train)
+#     #
+#     param_grid = {
+#         'C': [0.1, 1, 10],
+#         'kernel': ['linear', 'poly', 'rbf']
+#     }
+#     svm = GridSearchCV(SVC(probability=True, random_state=5805), param_grid, cv=StratifiedKFold(n_splits=5, shuffle=True, random_state=5805), scoring='accuracy')
+#     svm.fit(X_train, y_train)
+#     print(f"Best Parameters for SVM: {svm.best_params_}")
+#     # Best SVM model from RandomizedSearchCV
+#     best_svc = svm.best_estimator_
+#
+#     # Train and Test Accuracy
+#     train_accuracy = accuracy_score(y_train, best_svc.predict(X_train))
+#     test_accuracy = accuracy_score(y_test, best_svc.predict(X_test))
+#
+#     # Predictions and probabilities
+#     y_train_pred = best_svc.predict(X_train)
+#     y_test_pred = best_svc.predict(X_test)
+#     y_pred_proba = best_svc.predict_proba(X_test)
+#
+#     # Calculate Metrics and Plot Confusion Matrix
+#     train_precision, train_recall, train_accuracy, train_specificity, train_f1_score, train_conf_mat = fn.calculate_metrics_and_plot_confusion_matrix(
+#         y_train, y_train_pred, len(np.unique(y_train)), 'train', 'SVM')
+#     test_precision, test_recall, test_accuracy, test_specificity, test_f1_score, test_conf_mat = fn.calculate_metrics_and_plot_confusion_matrix(
+#         y_test, y_test_pred, len(np.unique(y_test)), 'test', 'SVM')
+#
+#     auc = fn.plot_roc_curve_with_auc(y_test, y_pred_proba, 'SVM')
+#
+#     print(f"\nBelow are the metrics for SVM Random Search:\n")
+#     metrics.append({
+#         'model': 'SVM Random Search',
+#         'Training Accuracy': train_accuracy,
+#         'Test Accuracy': test_accuracy,
+#         'Training Precision': train_precision,
+#         'Test Precision': test_recall,
+#         'AUC': auc,
+#         'Training Recall': train_recall,
+#         'Test Recall': test_recall,
+#         'Training Specificity': train_specificity,
+#         'Test Specificity': test_specificity,
+#         'Training F1 Score': train_f1_score,
+#         'Test F1 Score': test_f1_score,
+#         'Confusion Matrix': test_conf_mat
+#     })
+#
+#     # print(metrics)
+#     end_time = datetime.now()
+#     print("\nSVM Random Search end-time:", end_time)
+#     print("\nSVM Random Search time taken:", end_time - start_time)
+#
+#     return metrics
 
 #Function to perform Random forest classifier
 def random_forest(X_train, X_test, y_train, y_test):
@@ -694,7 +695,7 @@ def random_forest(X_train, X_test, y_train, y_test):
     auc = fn.plot_roc_curve_with_auc(y_test, y_pred_proba, 'Random Forest')
 
     metrics.append({
-        'model': 'Random Forest Grid Search',
+        'model': 'Random Forest',
         'Training Accuracy': train_accuracy,
         'Test Accuracy': test_accuracy,
         'Training Precision': train_precision,
@@ -763,7 +764,7 @@ def random_forest_bagging(X_train, X_test, y_train, y_test):
     auc = fn.plot_roc_curve_with_auc(y_test, y_pred_proba, 'Bagging')
 
     metrics.append({
-        'model': 'Bagging Grid Search',
+        'model': 'Bagging',
         'Training Accuracy': train_accuracy,
         'Test Accuracy': test_accuracy,
         'Training Precision': train_precision,
@@ -830,7 +831,7 @@ def random_forest_boosting(X_train, X_test, y_train, y_test):
     auc = fn.plot_roc_curve_with_auc(y_test, y_pred_proba, 'Boosting')
 
     metrics.append({
-        'model': 'Boosting Grid Search',
+        'model': 'Boosting',
         'Training Accuracy': train_accuracy,
         'Test Accuracy': test_accuracy,
         'Training Precision': train_precision,
@@ -898,7 +899,7 @@ def random_forest_stacking(X_train, X_test, y_train, y_test):
     auc = fn.plot_roc_curve_with_auc(y_test, y_pred_proba, 'Stacking')
 
     metrics.append({
-        'model': 'Stacking Grid Search',
+        'model': 'Stacking',
         'Training Accuracy': train_accuracy,
         'Test Accuracy': test_accuracy,
         'Training Precision': train_precision,
