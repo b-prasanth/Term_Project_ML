@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import pandas as pd
 from sklearn.cluster import KMeans
 from sklearn.metrics import silhouette_score
 from sklearn.preprocessing import StandardScaler
@@ -80,12 +81,17 @@ def dbscan_clustering(data, min_samples=5):
     print(f"\nDB-SCAN\nEstimated number of clusters: {n_clusters}")
     return clusters
 
-def apriori_analysis(transactions_df, min_support=0.01, min_confidence=0.6):
+def apriori_analysis(transactions_df, min_support=0.001, min_confidence=0.05):
     # Apply Apriori algorithm
+
+    transactions_df = transactions_df.select_dtypes(include=[object])
+    encoded=pd.get_dummies(transactions_df, drop_first=True)
+    transactions_df=encoded
+
     frequent_itemsets = apriori(transactions_df, min_support=min_support, use_colnames=True, low_memory=True)
 
     # Generate association rules
-    rules = association_rules(frequent_itemsets, metric="confidence", min_threshold=min_confidence)
+    rules = association_rules(frequent_itemsets, metric="confidence", min_threshold=min_confidence, num_itemsets=2)
 
     # Sort by lift and filter strong rules
     strong_rules = rules[rules['lift'] > 1.5].sort_values(by='lift', ascending=False)

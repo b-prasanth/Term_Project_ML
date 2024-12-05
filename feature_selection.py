@@ -3,7 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 from sklearn.decomposition import PCA, TruncatedSVD
-from sklearn.ensemble import RandomForestRegressor
+from sklearn.ensemble import RandomForestRegressor, RandomForestClassifier
 from sklearn.metrics import mean_squared_error
 from sklearn.model_selection import GridSearchCV, train_test_split
 import math
@@ -16,7 +16,6 @@ from sklearn.metrics import mean_squared_error, r2_score
 from statsmodels.stats.outliers_influence import variance_inflation_factor
 import warnings
 from imblearn.over_sampling import SMOTE
-import plot_func as pf
 
 
 #Setting up pandas display settings
@@ -169,14 +168,21 @@ def check_balance(y):
     print("\nClass Distribution:\n", class_counts)
     if proportions.nunique() == 1:
         print("Class distribution is equal.")
-        pf.display_balance_plot(class_counts)
+        fn.display_balance_plot(class_counts)
         return class_counts,True
     else:
         print("\nClass distribution is not equal. Balancing the dataset...")
-        pf.display_balance_plot(class_counts)
+        fn.display_balance_plot(class_counts)
         return class_counts,False
 
 def perform_balance(X,y):
     smote = SMOTE(random_state=5805)
     X_resampled, y_resampled = smote.fit_resample(X, y)
     return X_resampled, y_resampled
+
+def evaluate_model(X_train_selected, X_test_selected, y_train, y_test):
+    """ Helper function to evaluate a model's performance. You can replace RandomForestClassifier with any model. """
+    model = RandomForestClassifier(random_state=5805)
+    model.fit(X_train_selected, y_train)
+    accuracy = model.score(X_test_selected, y_test)
+    return accuracy

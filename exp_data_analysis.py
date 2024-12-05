@@ -4,7 +4,6 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import base64
 from io import BytesIO
-import env_config
 from pandas_profiling import ProfileReport
 
 def aggregate_data(data_cleaned):

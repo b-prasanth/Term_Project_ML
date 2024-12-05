@@ -5,10 +5,8 @@ from statsmodels.stats.outliers_influence import variance_inflation_factor
 import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_squared_error
-import plot_func as pf
 import func as fn
 from tabulate import tabulate
-import env_config
 
 
 # T-test Analysis Function
@@ -157,7 +155,7 @@ def do_stepwise_regression(df, target_column):
     print("\nConfidence Intervals:\n", confidence_interval_analysis(final_model))
 
     # Plot Train, Test, and Predictions
-    pf.plot_stepwise(y_train, y_test, y_pred)
+    fn.plot_stepwise(y_train, y_test, y_pred)
 
     # Perform T-test analysis
     t_test_analysis(final_model)
