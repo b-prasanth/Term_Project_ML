@@ -1,10 +1,9 @@
 import pandas as pd
 import numpy as np
 import statsmodels.api as sm
-from statsmodels.stats.outliers_influence import variance_inflation_factor
 import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split
-from sklearn.metrics import mean_squared_error
+from sklearn.metrics import mean_squared_error, r2_score
 import func as fn
 from tabulate import tabulate
 
@@ -64,7 +63,7 @@ def preprocess_and_resample(df, target_column, time_column="scheduled_time", fre
 
     # Drop rows with NaN after resampling
     df_resampled = df_resampled.dropna()
-    df_resampled.drop(columns=['delay_minutes'], inplace=True)
+    # df_resampled.drop(columns=['delay_minutes'], inplace=True)
     #Standardize dataset
     # ig_cols = ['status_departed', 'status_estimated', 'line_Bergen Co. Line', 'line_Gladstone Branch', 'line_Main Line',
     #            'line_Montclair-Boonton', 'line_Morristown Line', 'line_No Jersey Coast', 'line_Northeast Corrdr',
@@ -136,6 +135,9 @@ def do_stepwise_regression(df, target_column):
         raise ValueError("Not enough data after resampling for train-test split")
 
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=5805)
+    multi_linear(X_train, X_test, y_train, y_test)
+    X_train.drop(columns=['delay_minutes'], inplace=True)
+    X_test.drop(columns=['delay_minutes'], inplace=True)
 
     # Backward stepwise regression
     final_model, metrics_df, removed_features, selected_features = backward_stepwise_regression(X_train, y_train)
@@ -151,6 +153,7 @@ def do_stepwise_regression(df, target_column):
     test_r_squared = final_model.rsquared
 
     # Print model summary and confidence intervals
+    print("\nBackward Stepwise Regression Results:")
     print("Final Model Summary:\n", final_model.summary())
     print("\nConfidence Intervals:\n", confidence_interval_analysis(final_model))
 
@@ -173,3 +176,44 @@ def do_stepwise_regression(df, target_column):
     print("\nSelected Features from Backward Stepwise Elimination:\n", selected_features)
     print(f"\nMSE for the final model:\n{test_mse:.4f}" )
     print(f"\nR-squared for final model:\n{test_r_squared:.4f}")
+
+
+def multi_linear(X_train, X_test, y_train, y_test):
+    X_train=sm.add_constant(X_train)
+    X_test = sm.add_constant(X_test)
+    print(X_train.dtypes)
+    model = sm.OLS(y_train, X_train).fit()
+    # model.fit(X_train, y_train)
+
+    # Make predictions on the test set
+    y_pred = model.predict(X_test)
+
+    # Model coefficients and intercept
+    # print("Coefficients:", model.coef_)
+    print("\nMultiple Linear Regression:")
+    # print("Intercept:", model.intercept_)
+
+    # Evaluation metrics
+
+    mse_train=mean_squared_error(y_train, model.predict(X_train))
+    adj_r_squared = model.rsquared_adj
+    mse = mean_squared_error(y_test, y_pred)  # Mean Squared Error
+    r2 = r2_score(y_test, y_pred)  # R-squared score
+    print("R-squared:", r2)
+    print("Adjusted R-squared:", adj_r_squared)
+    print("AIC:", model.aic)
+    print("BIC:", model.bic)
+    print("MSE-Train:", mse_train)
+    print("MSE-Test:", mse)
+
+
+    # Plotting actual vs predicted values
+    plt.figure(figsize=(8, 6))
+    plt.scatter(y_test, y_pred, color='blue', label='Predicted vs Actual')
+    plt.plot([min(y_test), max(y_test)], [min(y_test), max(y_test)], color='red', lw=2, label='Perfect fit')
+    plt.xlabel('Actual Values')
+    plt.ylabel('Predicted Values')
+    plt.title('Actual vs Predicted Values')
+    plt.legend()
+    plt.grid(True)
+    plt.show()

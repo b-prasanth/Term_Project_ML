@@ -46,7 +46,6 @@ def plt_svd(cumulative_explained_variance,explained_variance):
 
 def display_balance_plot(class_counts):
 
-    # Plot the class distribution
     class_counts.plot(kind='bar', color='skyblue', edgecolor='black')
     plt.title('Dataset Class distribution')
     plt.xlabel('Class')
@@ -56,7 +55,7 @@ def display_balance_plot(class_counts):
     plt.show()
 
 def plot_stepwise(y_train, y_test, y_pred):
-    # Plot train, test, and predicted values
+
     plt.figure(figsize=(10, 6))
     plt.plot(y_train.values, label='Train', alpha=0.7)
     plt.plot(range(len(y_train), len(y_train) + len(y_test)), y_test.values, label='Test', alpha=0.7)
@@ -236,13 +235,6 @@ def calc_accuracy_recall_precision(TP, TN, FP, FN):
     accuracy=(TP+TN)/(TP+TN+FP+FN)
     return Recall, Precision, accuracy
 
-def calc_sigma_z(z):
-    sigma_z=1/(1+np.exp(-z))
-    return sigma_z
-
-def calc_cross_entropy(y,sigma_Z):
-    cross_entropy=-(y * np.log(sigma_Z) + (1 - y) * np.log(1 - sigma_Z))
-    return cross_entropy
 
 def do_smote(DF1):
     smote_oversample = SMOTE(random_state=5805)
@@ -301,105 +293,6 @@ def do_roc_auc(ytest,y_proba,Y_pred):
     plt.show()
     return TP, TN, FP, FN
 
-def plt_conf_matrix(x,y):
-    confusion_matrix_op = confusion_matrix(x, y)
-    conf_mat_plot = ConfusionMatrixDisplay(confusion_matrix=confusion_matrix_op)
-    conf_mat_plot.plot()
-    plt.show()
-
-def cov_matrix(matrix1):
-    rand_tmp = matrix1.to_numpy(dtype=np.float64)
-    tmp2 = matrix_multiply(matrix_of_ones(rand_tmp), rand_tmp) / len(rand_tmp)
-    cont_random_df3 = rand_tmp - tmp2
-    cont_random_df4 = matrix_multiply(matrix_transpose(cont_random_df3), cont_random_df3) / ((len(rand_tmp) - 1))
-    return cont_random_df4
-
-def backward_elimination(df_col, target, threshold=0.01):
-    num_features = len(df_col.columns)
-    bse_selected_features = list(df_col.columns)
-    bse_eliminated_features = []
-
-    while num_features > 0:
-        df_col_const = sm.add_constant(df_col[bse_selected_features])
-        OLS_OP = sm.OLS(target, df_col_const).fit()
-        max_p_value = max(OLS_OP.pvalues)
-
-        if max_p_value > threshold:
-            feature_to_remove = OLS_OP.pvalues.idxmax()
-            bse_selected_features.remove(feature_to_remove)
-            bse_eliminated_features.append({
-                'Feature Eliminated': feature_to_remove,
-                'AIC': OLS_OP.aic,
-                'BIC': OLS_OP.bic,
-                'Adjusted R2': OLS_OP.rsquared_adj,
-                'p-value': max_p_value
-            })
-            num_features -= 1
-        else:
-            break
-
-    bse_eliminated_features_table = pd.DataFrame(bse_eliminated_features)
-    return bse_selected_features, bse_eliminated_features_table
-
-def plotCorrelationMatrix(df, graphWidth):
-    # df = df.dropna('columns') # drop columns with NaN
-    df = df[[col for col in df if df[col].nunique() > 1]] # keep columns where there are more than 1 unique values
-    if df.shape[1] < 2:
-        print(f'No correlation plots shown: The number of non-NaN or constant columns ({df.shape[1]}) is less than 2')
-        return
-    corr = df.corr()
-    plt.figure(num=None, figsize=(graphWidth, graphWidth), dpi=80, facecolor='w', edgecolor='k')
-    corrMat = plt.matshow(corr, fignum = 1)
-    plt.xticks(range(len(corr.columns)), corr.columns, rotation=90)
-    plt.yticks(range(len(corr.columns)), corr.columns)
-    plt.gca().xaxis.tick_bottom()
-    plt.colorbar(corrMat)
-    plt.title(f'Correlation Matrix', fontsize=15)
-    plt.show()
-
-def stepwise_selection(X, y, threshold_in=0.05, threshold_out=0.10):
-    included = []
-    while True:
-        changed = False
-        excluded = list(set(X.columns) - set(included))
-        new_pval = pd.Series(index=excluded)
-        for new_column in excluded:
-            model = sm.OLS(y, sm.add_constant(pd.DataFrame(X[included + [new_column]]))).fit()
-            new_pval[new_column] = model.pvalues[new_column]
-        best_pval = new_pval.min()
-        if best_pval < threshold_in:
-            best_feature = new_pval.idxmin()
-            included.append(best_feature)
-            changed = True
-        model = sm.OLS(y, sm.add_constant(pd.DataFrame(X[included]))).fit()
-        pvalues = model.pvalues.iloc[1:]
-        worst_pval = pvalues.max()
-        if worst_pval > threshold_out:
-            worst_feature = pvalues.idxmax()
-            included.remove(worst_feature)
-            changed = True
-        if not changed:
-            break
-    return included
-
-def plot_cov_matrix(df):
-    cov_matrix = df.cov()
-    plt.subplot(1, 2, 1)  # 1 row, 2 columns, first subplot
-    sns.heatmap(cov_matrix, annot=True, cmap="coolwarm", fmt=".2f", linewidths=0.5)
-    plt.title('Sample Covariance Matrix')
-    plt.tight_layout()
-    plt.show()
-
-def plot_corr_matrix(df):
-    corr_matrix = df.corr()
-    plt.subplot(1, 2, 2)  # 1 row, 2 columns, second subplot
-    sns.heatmap(corr_matrix, annot=True, cmap="coolwarm", fmt=".2f", linewidths=0.5)
-    plt.title('Pearson Correlation Matrix')
-
-    # Display the heatmaps
-    plt.tight_layout()
-    plt.show()
-
 
 # Method to calculate and plot ROC Curve with AUC
 def plot_roc_curve_with_auc(y_test, y_pred_proba, model_name):
@@ -413,7 +306,7 @@ def plot_roc_curve_with_auc(y_test, y_pred_proba, model_name):
 
     # Plot combined ROC curve for the entire model
     plt.figure()
-    plt.plot(fpr_all, tpr_all, color='b', label=f'Combined ROC Curve (AUC = {roc_auc_all:.2f})')
+    plt.plot(fpr_all, tpr_all, color='b', label=f'ROC Curve (AUC = {roc_auc_all:.2f})')
 
     plt.plot([0, 1], [0, 1], 'k--')
     plt.xlabel('False Positive Rate')
@@ -426,10 +319,9 @@ def plot_roc_curve_with_auc(y_test, y_pred_proba, model_name):
 
 # Method to calculate precision, recall, accuracy and plot confusion matrix
 def calculate_metrics_and_plot_confusion_matrix(y_true, y_pred, num_classes, type, model_name):
-    # Initialize confusion matrix
+
     confusion = confusion_matrix(y_true, y_pred)
 
-    # Plot Confusion Matrix
     if type == "test":
         plt.figure(figsize=(8, 6))
         plt.imshow(confusion, cmap='Blues', interpolation='nearest')
@@ -447,7 +339,6 @@ def calculate_metrics_and_plot_confusion_matrix(y_true, y_pred, num_classes, typ
                 plt.text(j, i, confusion[i, j], ha="center", va="center", color="black", fontsize=12)
         plt.show()
 
-    # Initialize metrics
     precision = []
     recall = []
     f1_score = []
@@ -460,12 +351,10 @@ def calculate_metrics_and_plot_confusion_matrix(y_true, y_pred, num_classes, typ
     weighted_recall_sum = 0
     weighted_f1_sum = 0
     weighted_specificity_sum = 0
-    total_weight = 0  # For normalizing the weighted averages
+    total_weight = 0
 
-    # Count the total number of instances for each class (this will be the weight)
     class_counts = np.sum(confusion, axis=1)
 
-    # Loop over each class
     for i in range(num_classes):
         tp = confusion[i][i]
         fp = sum(confusion[:, i]) - tp

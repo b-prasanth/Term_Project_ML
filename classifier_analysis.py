@@ -3,7 +3,7 @@ from sklearn.ensemble import RandomForestClassifier, BaggingClassifier, Gradient
 from sklearn.exceptions import ConvergenceWarning
 from sklearn.preprocessing import StandardScaler, MinMaxScaler
 from sklearn.tree import DecisionTreeClassifier
-from sklearn.model_selection import train_test_split, RandomizedSearchCV, StratifiedKFold
+from sklearn.model_selection import train_test_split,  StratifiedKFold
 from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
 from sklearn.model_selection import GridSearchCV
 import func as fn
@@ -25,7 +25,7 @@ warnings.filterwarnings('ignore')
 
 #List to store metrics of each classifier
 metrics=[]
-
+cv=StratifiedKFold(n_splits=5, shuffle=True, random_state=5805)
 #Function to display the metrics in a
 def display_metrics():
     metrics_df = pd.DataFrame(metrics)
@@ -62,7 +62,7 @@ def pre_pruning_dt(X_train, X_test, y_train, y_test):
     dt_pre_prune = DecisionTreeClassifier(random_state=5805)
 
     # GridSearchCV for Pre-Pruning
-    grid_search_pre_prune = GridSearchCV(dt_pre_prune, pre_prune_params, cv=5, n_jobs=-1, verbose=1)
+    grid_search_pre_prune = GridSearchCV(dt_pre_prune, pre_prune_params, cv=cv, n_jobs=-1, verbose=1)
     grid_search_pre_prune.fit(X_train, y_train)
 
     # Best model from grid search
@@ -80,7 +80,6 @@ def pre_pruning_dt(X_train, X_test, y_train, y_test):
     y_pred_proba_pre_prune = best_dt_pre_prune.predict_proba(X_test)
 
     # Calculate metrics and plot confusion matrices for Pre-Pruning and Post-Pruning
-    print(np.unique(y_test))
     train_precision_pre, train_recall_pre, train_accuracy_pre, train_specificity, train_f1_score,train_conf_mat = fn.calculate_metrics_and_plot_confusion_matrix(
         y_train, y_train_pred_pre_prune, len(np.unique(y_train)), 'train', 'pre-pruning DT')
     test_precision_pre, test_recall_pre, test_accuracy_pre, test_specificity, test_f1_score,test_conf_mat = fn.calculate_metrics_and_plot_confusion_matrix(
@@ -220,7 +219,7 @@ def logistic_regression(X_train, X_test, y_train, y_test):
     log_reg = LogisticRegression(random_state=5805)
 
     # GridSearchCV for Hyperparameter Tuning
-    grid_search = GridSearchCV(estimator=log_reg, param_grid=param_grid, cv=5, n_jobs=-1)
+    grid_search = GridSearchCV(estimator=log_reg, param_grid=param_grid, cv=cv, n_jobs=-1)
     grid_search.fit(X_train, y_train)
     grid_search.fit(X_train, y_train)
 
@@ -287,7 +286,7 @@ def knn(X_train, X_test, y_train, y_test):
 
     for k in k_range:
         knn = KNeighborsClassifier(n_neighbors=k)
-        scores = cross_val_score(knn, X_train, y_train, cv=5, scoring='accuracy')  # 5-fold cross-validation
+        scores = cross_val_score(knn, X_train, y_train, cv=cv, scoring='accuracy')  # 5-fold cross-validation
         k_scores.append(scores.mean())
 
     # Plot k vs Accuracy
@@ -320,7 +319,7 @@ def knn(X_train, X_test, y_train, y_test):
     knn = KNeighborsClassifier()
 
     # GridSearchCV for Hyperparameter Tuning
-    grid_search = GridSearchCV(estimator=knn, param_grid=param_grid, cv=5, n_jobs=-1, verbose=1)
+    grid_search = GridSearchCV(estimator=knn, param_grid=param_grid, cv=cv, n_jobs=-1, verbose=1)
     grid_search.fit(X_train, y_train)
 
     # Best Model from GridSearchCV
@@ -383,7 +382,7 @@ def naive_bayes(X_train, X_test, y_train, y_test):
     nb = GaussianNB()
 
     # GridSearchCV for Hyperparameter Tuning
-    grid_search = GridSearchCV(estimator=nb, param_grid=param_grid, cv=5, n_jobs=-1, verbose=1)
+    grid_search = GridSearchCV(estimator=nb, param_grid=param_grid, cv=cv, n_jobs=-1, verbose=1)
     grid_search.fit(X_train, y_train)
 
     # Best Model from GridSearchCV
@@ -462,7 +461,7 @@ def neural_networks(X_train, X_test, y_train, y_test):
     mlp = MLPClassifier(max_iter=500, random_state=5805)
 
     # Use GridSearchCV for hyperparameter tuning
-    grid_search = GridSearchCV(estimator=mlp, param_grid=param_grid, cv=5, n_jobs=-1, verbose=1)
+    grid_search = GridSearchCV(estimator=mlp, param_grid=param_grid, cv=cv, n_jobs=-1, verbose=1)
     grid_search.fit(X_train, y_train)
 
     # Best Model from GridSearchCV
@@ -513,20 +512,19 @@ def neural_networks(X_train, X_test, y_train, y_test):
 
 def svm_classifier(X_train, X_test, y_train, y_test):
 
-    # param_grid = {
-    #     'kernel': ['linear','poly','rbf']
-    # }
 
+    scaler = StandardScaler()
+    X_train = scaler.fit_transform(X_train)
+    X_test = scaler.transform(X_test)
     start_time = datetime.now()
     print("\nSVM Grid Search Start-time:", start_time)
 
-    # svm = RandomizedSearchCV(SVC(probability=True, random_state=5805), param_distributions=param_grid, n_iter=10, cv=5,
-    #                          n_jobs=-1, verbose=1)
-    # svm=GridSearchCV(SVC(probability=True, random_state=5805), param_grid=param_grid, scoring='accuracy',cv=5, n_jobs=-1, verbose=1)
     param_grid = {
-        'kernel': ['rbf'],  # Linear kernel
+        'kernel': ['rbf', 'linear', 'poly'],
+        'degree': [2],
+        'tol': [1e-3, 1e-2]
     }
-    svm = GridSearchCV(SVC(probability=True, random_state=5805), param_grid=param_grid, scoring='accuracy', cv=5, n_jobs=-1, verbose=3)
+    svm = GridSearchCV(SVC(probability=True, random_state=5805), param_grid=param_grid, scoring='accuracy', cv=cv, n_jobs=-1)
     svm.fit(X_train, y_train)
 
     best_svc = svm.best_estimator_
@@ -670,7 +668,7 @@ def random_forest(X_train, X_test, y_train, y_test):
     }
 
     rf = RandomForestClassifier(random_state=5805)
-    grid_search = GridSearchCV(estimator=rf, param_grid=param_grid, cv=5, n_jobs=-1)
+    grid_search = GridSearchCV(estimator=rf, param_grid=param_grid, cv=cv, n_jobs=-1)
     grid_search.fit(X_train, y_train)
 
     best_rf = grid_search.best_estimator_
@@ -739,7 +737,7 @@ def random_forest_bagging(X_train, X_test, y_train, y_test):
     bagging = BaggingClassifier(estimator=DecisionTreeClassifier(), random_state=5805)
 
     # GridSearchCV for hyperparameter tuning
-    grid_search = GridSearchCV(estimator=bagging, param_grid=param_grid, cv=5, n_jobs=-1)
+    grid_search = GridSearchCV(estimator=bagging, param_grid=param_grid, cv=cv, n_jobs=-1)
     grid_search.fit(X_train, y_train)
 
     best_bagging = grid_search.best_estimator_
@@ -806,7 +804,7 @@ def random_forest_boosting(X_train, X_test, y_train, y_test):
     }
 
     boosting = GradientBoostingClassifier(random_state=5805)
-    grid_search = GridSearchCV(estimator=boosting, param_grid=param_grid, cv=5, n_jobs=-1)
+    grid_search = GridSearchCV(estimator=boosting, param_grid=param_grid, cv=cv, n_jobs=-1)
     grid_search.fit(X_train, y_train)
 
     best_boosting = grid_search.best_estimator_
@@ -874,7 +872,7 @@ def random_forest_stacking(X_train, X_test, y_train, y_test):
     ]
     stacking = StackingClassifier(estimators=base_learners, final_estimator=LogisticRegression())
 
-    grid_search = GridSearchCV(estimator=stacking, param_grid=param_grid, cv=5, n_jobs=-1)
+    grid_search = GridSearchCV(estimator=stacking, param_grid=param_grid, cv=cv, n_jobs=-1)
     grid_search.fit(X_train, y_train)
 
     best_stacking = grid_search.best_estimator_
@@ -963,82 +961,3 @@ def preprocess_and_balance(df, datetime_col, target_col, balance_method="oversam
     balanced_df = balanced_df.sample(frac=1, random_state=5805).reset_index(drop=True)
 
     return balanced_df
-
-
-def run_svm(X_train, X_test, y_train, y_test):
-    # Initialize SVM with default parameters
-    start_time = datetime.now()
-    print("\nSVM Grid Search Start-time:", start_time)
-    svm_model = SVC(probability=True, random_state=5805)
-
-    # Train the model
-    svm_model.fit(X_train, y_train)
-
-    # Predict on the test set
-    y_test_pred = svm_model.predict(X_test)
-    y_test_proba = svm_model.predict_proba(X_test)
-
-    # Evaluate the model
-    test_accuracy = accuracy_score(y_test, y_test_pred)
-    print("SVM Test Accuracy:", test_accuracy)
-    print("\nClassification Report:\n", classification_report(y_test, y_test_pred))
-
-    # Confusion Matrix
-    conf_mat = confusion_matrix(y_test, y_test_pred)
-    plt.figure(figsize=(8, 6))
-    sns.heatmap(conf_mat, annot=True, fmt='d', cmap='Blues', xticklabels=np.unique(y_test), yticklabels=np.unique(y_test))
-    plt.title('Confusion Matrix for SVM')
-    plt.xlabel('Predicted')
-    plt.ylabel('Actual')
-    plt.show()
-
-    end_time = datetime.now()
-    print("\nSVM Grid Search Start-time:", end_time)
-    print("\nSVM Grid Search time taken:", end_time - start_time)
-    return svm_model, test_accuracy
-
-
-def run_svm_with_grid_search(X_train, X_test, y_train, y_test):
-    start_time = datetime.now()
-    print("\nSVM Grid Search Start-time:", start_time)
-    # Define parameter grid for GridSearchCV
-    param_grid = {
-        'kernel': ['rbf','poly'],  # Kernel types
-    }
-
-    # Initialize SVC
-    svm_model = SVC(probability=True, random_state=5805, verbose=3)
-
-    # Perform Grid Search
-    grid_search = GridSearchCV(estimator=svm_model, param_grid=param_grid, cv=3, scoring='accuracy', n_jobs=-1, verbose=3)
-    grid_search.fit(X_train, y_train)
-
-    # Get the best model
-    best_svm = grid_search.best_estimator_
-    print("\nBest Parameters from Grid Search:", grid_search.best_params_)
-
-    # Train the best model on the training data
-    best_svm.fit(X_train, y_train)
-
-    # Predict on the test set
-    y_test_pred = best_svm.predict(X_test)
-    y_test_proba = best_svm.predict_proba(X_test)
-
-    # Evaluate the model
-    test_accuracy = accuracy_score(y_test, y_test_pred)
-    print("SVM Test Accuracy:", test_accuracy)
-    print("\nClassification Report:\n", classification_report(y_test, y_test_pred))
-
-    # Confusion Matrix
-    conf_mat = confusion_matrix(y_test, y_test_pred)
-    plt.figure(figsize=(8, 6))
-    sns.heatmap(conf_mat, annot=True, fmt='d', cmap='Blues', xticklabels=np.unique(y_test), yticklabels=np.unique(y_test))
-    plt.title('Confusion Matrix for SVM')
-    plt.xlabel('Predicted')
-    plt.ylabel('Actual')
-    plt.show()
-
-    end_time = datetime.now()
-    print("\nSVM Grid Search Start-time:", end_time)
-    print("\nSVM Grid Search time taken:", end_time - start_time)
-    return best_svm, test_accuracy
