@@ -42,6 +42,7 @@ def random_forest_regressor(X_train, X_test, y_train, y_test):
     random_forest.fit(X_train, y_train)
     feature_importances = pd.Series(random_forest.feature_importances_, index=X_train.columns)
     feature_importances_sorted = feature_importances.sort_values(ascending=False)
+    fn.rf_feature_imp_plot(feature_importances_sorted)
     threshold = 0.01
     selected_features_rf = feature_importances_sorted[feature_importances_sorted > threshold].index.tolist()
     eliminated_features_rf = feature_importances_sorted[feature_importances_sorted <= threshold].index.tolist()
@@ -60,6 +61,7 @@ def pca_exp_var(X_train, X_test, y_train, y_test):
     train_df_pca = pca.fit_transform(std_train_df)
     explained_variance = np.cumsum(pca.explained_variance_ratio_)
     n_components_95 = np.argmax(explained_variance >= 0.95) + 1
+    fn.pca_exp_var_plot(n_components_95, explained_variance, 'PCA')
     print(f"\nPCA\nNumber of components explaining more than 95% variance: {n_components_95}")
     return  n_components_95, explained_variance
 

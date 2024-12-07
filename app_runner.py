@@ -166,8 +166,8 @@ def phase_3(balanced_df, target_col):
 #Function call for all the clustering algorithms
 def phase_4(dataset):
     print('-' * 50 + " Phase 4 " + '-' * 50)
-    # ca.kmeans_clustering(dataset)
-    # ca.dbscan_clustering(dataset,5)
+    ca.kmeans_clustering(dataset)
+    ca.dbscan_clustering(dataset,5)
     ca.apriori_analysis(dataset)
     print('-' * 50 + " End of Phase 4 " + '-' * 50)
 
