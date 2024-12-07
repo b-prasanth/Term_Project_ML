@@ -81,7 +81,7 @@ def dbscan_clustering(data, min_samples=5):
     print(f"\nDB-SCAN\nEstimated number of clusters: {n_clusters}")
     return clusters
 
-def apriori_analysis(transactions_df, min_support=0.001, min_confidence=0.05):
+def apriori_analysis(transactions_df, min_support=0.05, min_confidence=0.1):
     # Apply Apriori algorithm
 
     transactions_df = transactions_df.select_dtypes(include=[object])
@@ -94,9 +94,12 @@ def apriori_analysis(transactions_df, min_support=0.001, min_confidence=0.05):
     rules = association_rules(frequent_itemsets, metric="confidence", min_threshold=min_confidence, num_itemsets=2)
 
     # Sort by lift and filter strong rules
-    strong_rules = rules[rules['lift'] > 1.5].sort_values(by='lift', ascending=False)
+    # print(rules)
+    strong_rules = rules[rules['lift'] > 1.2].sort_values(by='lift', ascending=False)
 
     # Display the top rules
-    print(f"Top association rules with lift > 1.5: \n{strong_rules.head()}")
+    # print(f"Top association rules with lift > 1.5: \n{strong_rules.head()}")
+    print(f"\nAssociation rules:\n{rules}")
+    print(f"\nFrequent Item sets:\n{frequent_itemsets}")
 
     return strong_rules

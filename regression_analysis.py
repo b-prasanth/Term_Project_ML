@@ -95,7 +95,7 @@ def backward_stepwise_regression(X, y):
         max_p_value = p_values.max()
         feature_to_remove = p_values.idxmax()
 
-        if max_p_value > 0.05:
+        if max_p_value > 0.1:
             # Record only the feature to be removed and the metrics
             metrics_table.append({
                 "Feature Removed": feature_to_remove,
@@ -154,7 +154,7 @@ def do_stepwise_regression(df, target_column):
 
     # Print model summary and confidence intervals
     print("\nBackward Stepwise Regression Results:")
-    print("Final Model Summary:\n", final_model.summary())
+    # print("Final Model Summary:\n", final_model.summary())
     print("\nConfidence Intervals:\n", confidence_interval_analysis(final_model))
 
     # Plot Train, Test, and Predictions
@@ -166,8 +166,6 @@ def do_stepwise_regression(df, target_column):
     # Perform F-test analysis
     f_test_analysis(final_model)
 
-    # Display metrics table
-    # Reset index and start from 1
     metrics_df = metrics_df.reset_index(drop=True)
     metrics_df.index = metrics_df.index + 1
 
@@ -188,13 +186,7 @@ def multi_linear(X_train, X_test, y_train, y_test):
     # Make predictions on the test set
     y_pred = model.predict(X_test)
 
-    # Model coefficients and intercept
-    # print("Coefficients:", model.coef_)
     print("\nMultiple Linear Regression:")
-    # print("Intercept:", model.intercept_)
-
-    # Evaluation metrics
-
     mse_train=mean_squared_error(y_train, model.predict(X_train))
     adj_r_squared = model.rsquared_adj
     mse = mean_squared_error(y_test, y_pred)  # Mean Squared Error

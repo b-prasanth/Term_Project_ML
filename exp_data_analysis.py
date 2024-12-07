@@ -5,6 +5,7 @@ import seaborn as sns
 import base64
 from io import BytesIO
 from pandas_profiling import ProfileReport
+from sklearn.cluster import DBSCAN
 from sklearn.decomposition import PCA, TruncatedSVD
 from sklearn.ensemble import RandomForestRegressor, RandomForestClassifier
 from sklearn.metrics import mean_squared_error
@@ -69,11 +70,13 @@ def do_vif(cleaned_dataset_encoded,target):
     vif_data = pd.DataFrame()
     features = cleaned_dataset_encoded.drop(columns=[target]).select_dtypes(include=np.number).columns
     X = cleaned_dataset_encoded[features]
-    X_scaled = fn.standardized_new(X, ig_cols)
+    # X_scaled = fn.standardized_new(X, ig_cols)
+    scaler = StandardScaler()
+    X_scaled = scaler.fit_transform(X)
     vif_data['Feature'] = features
     vif_data['VIF'] = [variance_inflation_factor(X_scaled, i) for i in range(X_scaled.shape[1])]
-    filtered_data = vif_data[vif_data['VIF'] < 5]
-    remove_data=vif_data[vif_data['VIF'] > 5]
+    filtered_data = vif_data[vif_data['VIF'] < 10]
+    remove_data=vif_data[vif_data['VIF'] > 10]
     print("\nVIF Number of Features", len(filtered_data))
     print("\nVIF Data:\n", filtered_data)
     return filtered_data, remove_data
@@ -118,51 +121,44 @@ def do_svd(df2):
 
 def anomaly_outlier(data):
 
-    data=data.select_dtypes(include=['float64', 'int64', 'float32', 'int32'])
-    # Compute Z-Score for each column
-    z_scores = (data - data.mean()) / data.std()
 
-    # Set a threshold (e.g., 3 for detecting anomalies)
-    threshold = 3
+    features_for_anomaly = ['delay_minutes', 'long_delay']
 
-    # Identify anomalies
-    anomalies_z = (z_scores.abs() > threshold)
+    # Step 1: Standardize the features (important for DBSCAN)
+    data_anomaly = data[features_for_anomaly].dropna()  # Drop any missing values
+    scaler = StandardScaler()
+    data_anomaly_scaled = scaler.fit_transform(data_anomaly)
 
-    # Get rows with anomalies
-    anomalous_rows = data[anomalies_z.any(axis=1)]
-    print("Z-Score Anomalies:\n", anomalous_rows)
+    # Step 2: Apply DBSCAN for anomaly detection
+    dbscan = DBSCAN(eps=0.5, min_samples=5)  # Adjust parameters as needed
+    dbscan_labels = dbscan.fit_predict(data_anomaly_scaled)
 
-    # Compute Q1, Q3, and IQR for each column
-    Q1 = data.quantile(0.25)
-    Q3 = data.quantile(0.75)
-    IQR = Q3 - Q1
+    # Step 3: Add DBSCAN labels to the dataset
+    data['DBSCAN_Label'] = dbscan_labels
+    data['DBSCAN_Outlier'] = dbscan_labels == -1  # Mark outliers with DBSCAN label -1
 
-    # Define lower and upper bounds for anomalies
-    lower_bound = Q1 - 1.5 * IQR
-    upper_bound = Q3 + 1.5 * IQR
+    # Step 4: Count outliers
+    outlier_count = data['DBSCAN_Outlier'].sum()
+    print(f"Number of outliers detected by DBSCAN: {outlier_count}")
 
-    # Identify anomalies
-    anomalies_iqr = (data < lower_bound) | (data > upper_bound)
+    # Step 5: Visualization of DBSCAN clustering
+    plt.figure(figsize=(8, 6))
+    plt.scatter(data['train_id'], data['delay_minutes'], c=dbscan_labels, cmap="viridis", label="Clusters")
+    plt.scatter(data[data['DBSCAN_Outlier'] == True]['train_id'],
+                data[data['DBSCAN_Outlier'] == True]['delay_minutes'], c="red", label="Outliers")
+    plt.title("DBSCAN Clusters and Outliers based on Delay Minutes")
+    plt.xlabel("Train ID")
+    plt.ylabel("Delay Minutes")
+    plt.legend()
+    plt.show()
 
-    # Get rows with anomalies
-    anomalous_rows_iqr = data[anomalies_iqr.any(axis=1)]
-    print("IQR Anomalies:\n", anomalous_rows_iqr)
+    # Step 6: Remove outliers from the dataset
+    data_cleaned = data[~data['DBSCAN_Outlier']]  # Keep only non-outlier rows
+    data_cleaned = data_cleaned.drop(columns=["DBSCAN_Label", "DBSCAN_Outlier"])  # Drop helper columns
 
-# def check_balance(X, y):
-#     class_counts = y.value_counts()
-#     proportions = class_counts / class_counts.sum()
-#     # Display counts and proportion of each class
-#     print("\nClass Distribution:\n", class_counts)
-#
-#     if proportions.nunique() == 1:
-#         print("Class distribution is equal.")
-#         return class_counts, X, y
-#     else:
-#         pf.display_balance_plot(class_counts)
-#         print("Class distribution is not equal.\nBalancing the dataset using SMOTE")
-#         X_resampled, y_resampled = perform_balance(X, y)
-#         class_counts, X_resampled, y_resampled=check_balance(X_resampled, y_resampled)
-#         return class_counts, X_resampled, y_resampled
+    print(f"Shape of dataset after removing outliers: {data_cleaned.shape}")
+    return data_cleaned
+
 
 def check_balance(y):
 
@@ -239,7 +235,7 @@ def get_arrival_status(delay_minutes):
         return 'late'
 
 def clean_data(data):
-
+    # data1 = data
     data['arrival_status'] = data['arrival_minutes'].apply(get_arrival_status)
     data['time_of_day'] = data['scheduled_time'].dt.hour.apply(get_time_of_day)
     # data.drop(columns=['delay_minutes'], inplace=True)
@@ -262,11 +258,7 @@ def data_encode(data):
                                              columns=['status', 'line', 'type'],
                                              drop_first=True,
                                              dtype=int)
-
-    # label_encoder = LabelEncoder()
-    # cleaned_dataset_encoded=data
-    # cleaned_dataset_encoded['status'] = label_encoder.fit_transform(cleaned_dataset_encoded['status'])  # Encode target variable
-    # cleaned_dataset_encoded['line'] = label_encoder.fit_transform(cleaned_dataset_encoded['line'])  # Encode 'line' column
+    # cleaned_dataset_encoded=data.drop(columns=['status', 'line', 'type'])
     return cleaned_dataset_encoded
 
 def aggregate_data(data_cleaned):

@@ -86,6 +86,7 @@ def pre_pruning_dt(X_train, X_test, y_train, y_test):
         y_test, y_test_pred_pre_prune, len(np.unique(y_test)), 'test', 'pre-pruning DT')
 
     auc = fn.plot_roc_curve_with_auc(y_test, y_pred_proba_pre_prune, 'pre-pruning DT')
+    auc_ovo=fn.plot_roc_curve_with_auc_ovo(X_test,y_test, best_dt_pre_prune, 'pre-pruning DT')
 
     metrics.append({
         'model': 'DT Pre-Pruning',
@@ -110,59 +111,50 @@ def pre_pruning_dt(X_train, X_test, y_train, y_test):
 
     return metrics
 
-#Function to perform post-pruning decision tree
-def post_pruning_dt(X_train, X_test, y_train, y_test):
 
+
+def post_pruning_dt(X_train, X_test, y_train, y_test):
     start_time = datetime.now()
     print("\nDT Post-pruning Start-time:", start_time)
+    decision_tree = DecisionTreeClassifier(random_state=5805)
+    path = decision_tree.cost_complexity_pruning_path(X_train, y_train)
+    alphas, impurities = path.ccp_alphas, path.impurities
+    train_accuracies = []
+    test_accuracies = []
 
-    # Post-Pruning using Cost Complexity Pruning (ccp_alpha)
-    dt_post_prune = DecisionTreeClassifier(random_state=5805)
+    for alpha in alphas:
+        decTreeModel = DecisionTreeClassifier(random_state=5805, ccp_alpha=alpha)
+        decTreeModel.fit(X_train, y_train)
+        target_train_pred = decTreeModel.predict(X_train)
+        target_test_pred = decTreeModel.predict(X_test)
+        train_accuracies.append(accuracy_score(y_train, target_train_pred))
+        test_accuracies.append(accuracy_score(y_test, target_test_pred))
 
-    # Fit a large tree to get the pruning path
-    dt_post_prune.fit(X_train, y_train)
 
-    # Get the effective alpha values that correspond to the pruning path
-    path = dt_post_prune.cost_complexity_pruning_path(X_train, y_train)
+    # Find the best alpha (alpha with the highest test accuracy)
+    best_alpha_idx = test_accuracies.index(max(test_accuracies))
+    best_alpha = alphas[best_alpha_idx]
+    bestdecTreeModel = DecisionTreeClassifier(random_state=5805, ccp_alpha=best_alpha)
+    bestdecTreeModel.fit(X_train, y_train)
+    y_train_pred_post_prune = bestdecTreeModel.predict(X_train)
+    y_test_pred_post_prune = bestdecTreeModel.predict(X_test)
 
-    # Extract the alphas and the corresponding ccp_alphas
-    ccp_alphas = path.ccp_alphas
-    # Reduce the number of alphas tested by selecting fewer values
-    ccp_alphas = ccp_alphas[::10]  # You can adjust this step to select fewer values
+    y_pred_proba_post_prune = bestdecTreeModel.predict_proba(X_test)
 
-    def train_and_evaluate(alpha):
-        dt_post_prune = DecisionTreeClassifier(random_state=5805, ccp_alpha=alpha)
-        dt_post_prune.fit(X_train, y_train)
-        train_score = accuracy_score(y_train, dt_post_prune.predict(X_train))
-        test_score = accuracy_score(y_test, dt_post_prune.predict(X_test))
-        return alpha, train_score, test_score
-
-    # Parallelize the loop for faster execution
-    results = Parallel(n_jobs=-1)(delayed(train_and_evaluate)(alpha) for alpha in ccp_alphas)
-
-    # Find the alpha that gives the best test accuracy
-    best_alpha = max(results, key=lambda x: x[2])[0]
-    best_dt_post_prune = DecisionTreeClassifier(random_state=5805, ccp_alpha=best_alpha)
-    best_dt_post_prune.fit(X_train, y_train)
-
-    # Train and Test Accuracy for Post-Pruning
-    train_accuracy_post_prune = accuracy_score(y_train, best_dt_post_prune.predict(X_train))
-    test_accuracy_post_prune = accuracy_score(y_test, best_dt_post_prune.predict(X_test))
+    train_accuracy_post_prune = accuracy_score(y_train, bestdecTreeModel.predict(X_train))
+    test_accuracy_post_prune = accuracy_score(y_test, bestdecTreeModel.predict(X_test))
 
     print(f"Post-Pruning - Train Accuracy: {train_accuracy_post_prune:.3f}")
     print(f"Post-Pruning - Test Accuracy: {test_accuracy_post_prune:.3f}")
 
-    y_train_pred_post_prune = best_dt_post_prune.predict(X_train)
-    y_test_pred_post_prune = best_dt_post_prune.predict(X_test)
-
-    y_pred_proba_post_prune = best_dt_post_prune.predict_proba(X_test)
-
-    train_precision_post, train_recall_post, train_accuracy_post, train_specificity, train_f1_score,train_conf_mat = fn.calculate_metrics_and_plot_confusion_matrix(
+    train_precision_post, train_recall_post, train_accuracy_post, train_specificity, train_f1_score, train_conf_mat = fn.calculate_metrics_and_plot_confusion_matrix(
         y_train, y_train_pred_post_prune, len(np.unique(y_train)), 'train', 'post-pruning DT')
-    test_precision_post, test_recall_post, test_accuracy_post, test_specificity, test_f1_score,test_conf_mat = fn.calculate_metrics_and_plot_confusion_matrix(
+    test_precision_post, test_recall_post, test_accuracy_post, test_specificity, test_f1_score, test_conf_mat = fn.calculate_metrics_and_plot_confusion_matrix(
         y_test, y_test_pred_post_prune, len(np.unique(y_test)), 'test', 'post-pruning DT')
 
     auc = fn.plot_roc_curve_with_auc(y_test, y_pred_proba_post_prune, 'post-pruning DT')
+
+    auc_ovo=fn.plot_roc_curve_with_auc_ovo(X_test,y_test, bestdecTreeModel, 'post-pruning DT')
 
     metrics.append({
         'model': 'DT Post-Pruning',
@@ -187,6 +179,7 @@ def post_pruning_dt(X_train, X_test, y_train, y_test):
 
     return metrics
 
+
 #Function to perform Logistic Regression
 def logistic_regression(X_train, X_test, y_train, y_test):
     warnings.filterwarnings('ignore', category=FutureWarning)
@@ -200,18 +193,10 @@ def logistic_regression(X_train, X_test, y_train, y_test):
     start_time = datetime.now()
     print("\nLogistic Regression Grid Search Start-time:", start_time)
 
-    # Logistic Regression Hyperparameters to tune
-    # param_grid = {
-    #     'penalty': ['l2', 'none'],  # Regularization type
-    #     'C': [0.01, 0.1, 1, 10, 100],  # Regularization strength
-    #     'solver': ['liblinear', 'saga'],  # Solvers for optimization
-    #     'max_iter': [100, 200, 300, 1000],  # Maximum iterations
-    # }
-
     param_grid = {
-        'penalty': ['l2', 'none'],  # Regularization type
-        'C': [0.01, 0.1, 1, 10, 100],  # Regularization strength
-        'solver': ['liblinear', 'saga'],  # Solvers for optimization
+        'penalty': ['l2', 'none'],
+        'C': [0.01, 0.1, 1, 10, 100],
+        'solver': ['liblinear', 'saga'],
         'max_iter': [500, 1000, 2000, 3000],
     }
 
@@ -244,6 +229,7 @@ def logistic_regression(X_train, X_test, y_train, y_test):
         y_test, y_test_pred, len(np.unique(y_test)), 'test', 'Logistic Regression')
 
     auc = fn.plot_roc_curve_with_auc(y_test, y_pred_proba, 'Logistic Regression')
+    auc_ovo = fn.plot_roc_curve_with_auc_ovo(X_test, y_test, best_log_reg, 'Logistic Regression')
 
     # print(f"\nBelow are the metrics for Logistic Regression Grid Search:\n")
     metrics.append( {
@@ -299,7 +285,7 @@ def knn(X_train, X_test, y_train, y_test):
     plt.grid(True)
     plt.show()
 
-    print("Optimal k based on validation scores:", k_range[np.argmax(k_scores)])
+    print("Optimal k:", k_range[np.argmax(k_scores)])
     print("Corresponding Accuracy:", max(k_scores))
 
     # Original KNN Grid Search Functionality
@@ -343,6 +329,7 @@ def knn(X_train, X_test, y_train, y_test):
         y_test, y_test_pred, len(np.unique(y_test)), 'test', 'KNN')
 
     auc = fn.plot_roc_curve_with_auc(y_test, y_pred_proba, 'KNN')
+    auc_ovo = fn.plot_roc_curve_with_auc_ovo(X_test, y_test, best_knn, 'KNN')
 
     # print(f"\nBelow are the metrics for KNN Grid Search:\n")
     metrics.append({
@@ -406,6 +393,7 @@ def naive_bayes(X_train, X_test, y_train, y_test):
         y_test, y_test_pred, len(np.unique(y_test)), 'test', 'Naive Bayes')
 
     auc = fn.plot_roc_curve_with_auc(y_test, y_pred_proba, 'Naive Bayes')
+    auc_ovo = fn.plot_roc_curve_with_auc_ovo(X_test, y_test, best_nb, 'Naive Bayes')
 
     # print(f"\nBelow are the metrics for Naive Bayes Grid Search:\n")
     metrics.append( {
@@ -482,6 +470,7 @@ def neural_networks(X_train, X_test, y_train, y_test):
         y_test, y_test_pred, len(np.unique(y_test)), 'test', 'Neural Networks')
 
     auc = fn.plot_roc_curve_with_auc(y_test, y_pred_proba, 'Neural Networks')
+    auc_ovo = fn.plot_roc_curve_with_auc_ovo(X_test, y_test, best_mlp, 'Neural Networks')
 
     # print(f"\nBelow are the metrics for Neural Networks Grid Search:\n")
     metrics.append({
@@ -544,6 +533,7 @@ def svm_classifier(X_train, X_test, y_train, y_test):
         y_test, y_test_pred, len(np.unique(y_test)), 'test', 'SVM')
 
     auc = fn.plot_roc_curve_with_auc(y_test, y_pred_proba, 'SVM')
+    auc_ovo = fn.plot_roc_curve_with_auc_ovo(X_test, y_test, best_svc, 'SVM')
 
     print(f"\nBelow are the metrics for SVM Grid Search:\n")
     metrics.append( {
@@ -691,6 +681,7 @@ def random_forest(X_train, X_test, y_train, y_test):
         y_test, y_test_pred, len(np.unique(y_test)), 'test', 'Random Forest')
 
     auc = fn.plot_roc_curve_with_auc(y_test, y_pred_proba, 'Random Forest')
+    auc_ovo = fn.plot_roc_curve_with_auc_ovo(X_test, y_test, best_rf, 'Random Forest')
 
     metrics.append({
         'model': 'Random Forest',
@@ -760,6 +751,7 @@ def random_forest_bagging(X_train, X_test, y_train, y_test):
         y_test, y_test_pred, len(np.unique(y_test)), 'test', 'Bagging')
 
     auc = fn.plot_roc_curve_with_auc(y_test, y_pred_proba, 'Bagging')
+    auc_ovo = fn.plot_roc_curve_with_auc_ovo(X_test, y_test, best_bagging, 'Bagging')
 
     metrics.append({
         'model': 'Bagging',
@@ -827,6 +819,7 @@ def random_forest_boosting(X_train, X_test, y_train, y_test):
         y_test, y_test_pred, len(np.unique(y_test)), 'test', 'Boosting')
 
     auc = fn.plot_roc_curve_with_auc(y_test, y_pred_proba, 'Boosting')
+    auc_ovo = fn.plot_roc_curve_with_auc_ovo(X_test, y_test, best_boosting, 'Boosting')
 
     metrics.append({
         'model': 'Boosting',
@@ -895,6 +888,7 @@ def random_forest_stacking(X_train, X_test, y_train, y_test):
         y_test, y_test_pred, len(np.unique(y_test)), 'test', 'Stacking')
 
     auc = fn.plot_roc_curve_with_auc(y_test, y_pred_proba, 'Stacking')
+    auc_ovo = fn.plot_roc_curve_with_auc_ovo(X_test, y_test, best_stacking, 'Stacking')
 
     metrics.append({
         'model': 'Stacking',
