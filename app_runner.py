@@ -115,7 +115,7 @@ def phase_1():
 
     balanced_df.drop(columns=['month', 'day', 'hour', 'day_of_week'], inplace=True)
     pre_processed_df.drop(columns=['month', 'day', 'hour', 'day_of_week'], inplace=True)
-    eda.do_eda_profiling(data_cleaned)
+    # eda.do_eda_profiling(data_cleaned)
     print('-' * 50 + " End of Phase 1 " + '-' * 50)
     return balanced_df, pre_processed_df, data_cleaned
 
