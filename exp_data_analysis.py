@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import base64
 from io import BytesIO
-from pandas_profiling import ProfileReport
+# from pandas_profiling import ProfileReport
 from sklearn.cluster import DBSCAN
 from sklearn.decomposition import PCA, TruncatedSVD
 from sklearn.ensemble import RandomForestRegressor, RandomForestClassifier

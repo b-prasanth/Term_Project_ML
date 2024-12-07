@@ -181,7 +181,7 @@ def plot_roc_curve_with_auc(y_test, y_pred_proba, model_name):
     # Calculate ROC curve and AUC for the entire model using One-vs-Rest (OvR) strategy
     fpr_all, tpr_all, _ = roc_curve(y_test_bin.ravel(), y_pred_proba.ravel())
     roc_auc_all = auc(fpr_all, tpr_all)
-
+    # print(f"AUC: {roc_auc_all}")
     # Plot combined ROC curve for the entire model
     plt.figure()
     plt.plot(fpr_all, tpr_all, color='b', label=f'ROC Curve (AUC = {roc_auc_all:.2f})')
@@ -276,6 +276,10 @@ def calculate_metrics_and_plot_confusion_matrix(y_true, y_pred, num_classes, typ
     weighted_recall = weighted_recall_sum / total_weight
     weighted_f1_score = weighted_f1_sum / total_weight
     weighted_specificity = weighted_specificity_sum / total_weight
+    # print(f"Precision: {weighted_precision}")
+    # print(f"Recall: {weighted_recall}")
+    # print(f"F1-Score: {weighted_f1_score}")
+    # print(f"Specificity: {weighted_specificity}")
 
     return (
         weighted_precision, weighted_recall, accuracy, weighted_f1_score, weighted_specificity, confusion

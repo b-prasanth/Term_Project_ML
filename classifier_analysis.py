@@ -43,6 +43,16 @@ def display_metrics():
     metrics_table = tabulate(filtered_metrics, headers='keys', tablefmt='grid', floatfmt='.3f')
     print(metrics_table)
 
+def display_metrics_console(train_accuracy, test_accuracy, test_precision, test_recall, test_f1, test_specificity, test_auc, confusion_matrix):
+    print('\nTrain Accuracy:', train_accuracy)
+    print('Test Accuracy:', test_accuracy)
+    print('Precision:', test_precision)
+    print('Recall:', test_recall)
+    print('F1 Score:', test_f1)
+    print('Specificity:', test_specificity)
+    print('AUC:', test_auc)
+    print('Confusion Matrix\n', confusion_matrix)
+
 #Function to perform pre-pruning decision tree
 def pre_pruning_dt(X_train, X_test, y_train, y_test):
 
@@ -72,8 +82,10 @@ def pre_pruning_dt(X_train, X_test, y_train, y_test):
     train_accuracy_pre_prune = accuracy_score(y_train, best_dt_pre_prune.predict(X_train))
     test_accuracy_pre_prune = accuracy_score(y_test, best_dt_pre_prune.predict(X_test))
 
-    print(f"Pre-Pruning - Train Accuracy: {train_accuracy_pre_prune:.3f}")
-    print(f"Pre-Pruning - Test Accuracy: {test_accuracy_pre_prune:.3f}")
+    # print(f"\nPre-Pruning - Train Accuracy: {train_accuracy_pre_prune:.3f}")
+    # print(f"Pre-Pruning - Test Accuracy: {test_accuracy_pre_prune:.3f}")
+    print(f"\nBest Parameters: {grid_search_pre_prune.best_params_}")
+    print(f"Best Estimators: {best_dt_pre_prune}")
 
     y_train_pred_pre_prune = best_dt_pre_prune.predict(X_train)
     y_test_pred_pre_prune = best_dt_pre_prune.predict(X_test)
@@ -87,6 +99,8 @@ def pre_pruning_dt(X_train, X_test, y_train, y_test):
 
     auc = fn.plot_roc_curve_with_auc(y_test, y_pred_proba_pre_prune, 'pre-pruning DT')
     auc_ovo=fn.plot_roc_curve_with_auc_ovo(X_test,y_test, best_dt_pre_prune, 'pre-pruning DT')
+
+    display_metrics_console(train_accuracy_pre_prune, test_accuracy_pre_prune, test_precision_pre, test_recall_pre,test_f1_score,test_specificity,auc,test_conf_mat)
 
     metrics.append({
         'model': 'DT Pre-Pruning',
@@ -144,8 +158,9 @@ def post_pruning_dt(X_train, X_test, y_train, y_test):
     train_accuracy_post_prune = accuracy_score(y_train, bestdecTreeModel.predict(X_train))
     test_accuracy_post_prune = accuracy_score(y_test, bestdecTreeModel.predict(X_test))
 
-    print(f"Post-Pruning - Train Accuracy: {train_accuracy_post_prune:.3f}")
-    print(f"Post-Pruning - Test Accuracy: {test_accuracy_post_prune:.3f}")
+    # print(f"\nPost-Pruning - Train Accuracy: {train_accuracy_post_prune:.3f}")
+    # print(f"Post-Pruning - Test Accuracy: {test_accuracy_post_prune:.3f}")
+    # print(f"\nBest Parameters: {bestdecTreeModel.best_params_}")
 
     train_precision_post, train_recall_post, train_accuracy_post, train_specificity, train_f1_score, train_conf_mat = fn.calculate_metrics_and_plot_confusion_matrix(
         y_train, y_train_pred_post_prune, len(np.unique(y_train)), 'train', 'post-pruning DT')
@@ -155,6 +170,9 @@ def post_pruning_dt(X_train, X_test, y_train, y_test):
     auc = fn.plot_roc_curve_with_auc(y_test, y_pred_proba_post_prune, 'post-pruning DT')
 
     auc_ovo=fn.plot_roc_curve_with_auc_ovo(X_test,y_test, bestdecTreeModel, 'post-pruning DT')
+
+    display_metrics_console(train_accuracy_post_prune, test_accuracy_post_prune, test_precision_post, test_recall_post, test_f1_score, test_specificity, auc, test_conf_mat)
+
 
     metrics.append({
         'model': 'DT Post-Pruning',
@@ -214,9 +232,11 @@ def logistic_regression(X_train, X_test, y_train, y_test):
     # Train and Test Accuracy for Logistic Regression
     train_accuracy = accuracy_score(y_train, best_log_reg.predict(X_train))
     test_accuracy = accuracy_score(y_test, best_log_reg.predict(X_test))
+    print(f"Best Parameters: {grid_search.best_params_}")
+    print(f"Best Estimator: {best_log_reg}")
 
-    print(f"Logistic Regression - Train Accuracy: {train_accuracy:.3f}")
-    print(f"Logistic Regression - Test Accuracy: {test_accuracy:.3f}")
+    # print(f"\nLogistic Regression - Train Accuracy: {train_accuracy:.3f}")
+    # print(f"Logistic Regression - Test Accuracy: {test_accuracy:.3f}")
 
     y_train_pred = best_log_reg.predict(X_train)
     y_test_pred = best_log_reg.predict(X_test)
@@ -230,6 +250,8 @@ def logistic_regression(X_train, X_test, y_train, y_test):
 
     auc = fn.plot_roc_curve_with_auc(y_test, y_pred_proba, 'Logistic Regression')
     auc_ovo = fn.plot_roc_curve_with_auc_ovo(X_test, y_test, best_log_reg, 'Logistic Regression')
+
+    display_metrics_console(train_accuracy, test_accuracy, test_precision, test_recall, test_f1_score, test_specificity, auc, test_conf_mat)
 
     # print(f"\nBelow are the metrics for Logistic Regression Grid Search:\n")
     metrics.append( {
@@ -315,8 +337,11 @@ def knn(X_train, X_test, y_train, y_test):
     train_accuracy = accuracy_score(y_train, best_knn.predict(X_train))
     test_accuracy = accuracy_score(y_test, best_knn.predict(X_test))
 
-    print(f"KNN - Train Accuracy: {train_accuracy:.3f}")
-    print(f"KNN - Test Accuracy: {test_accuracy:.3f}")
+    print(f"\nBest Parameters: {grid_search.best_params_}")
+    print(f"Best Estimator: {best_knn}")
+
+    # print(f"\nKNN - Train Accuracy: {train_accuracy:.3f}")
+    # print(f"KNN - Test Accuracy: {test_accuracy:.3f}")
 
     y_train_pred = best_knn.predict(X_train)
     y_test_pred = best_knn.predict(X_test)
@@ -330,6 +355,8 @@ def knn(X_train, X_test, y_train, y_test):
 
     auc = fn.plot_roc_curve_with_auc(y_test, y_pred_proba, 'KNN')
     auc_ovo = fn.plot_roc_curve_with_auc_ovo(X_test, y_test, best_knn, 'KNN')
+    display_metrics_console(train_accuracy, test_accuracy, test_precision, test_recall, test_f1_score, test_specificity,
+                            auc, test_conf_mat)
 
     # print(f"\nBelow are the metrics for KNN Grid Search:\n")
     metrics.append({
@@ -379,8 +406,10 @@ def naive_bayes(X_train, X_test, y_train, y_test):
     train_accuracy = accuracy_score(y_train, best_nb.predict(X_train))
     test_accuracy = accuracy_score(y_test, best_nb.predict(X_test))
 
-    print(f"Naive Bayes - Train Accuracy: {train_accuracy:.3f}")
-    print(f"Naive Bayes - Test Accuracy: {test_accuracy:.3f}")
+    # print(f"\nNaive Bayes - Train Accuracy: {train_accuracy:.3f}")
+    # print(f"Naive Bayes - Test Accuracy: {test_accuracy:.3f}")
+    print(f"\nBest Parameters: {grid_search.best_params_}")
+    print(f"Best Estimator: {best_nb}")
 
     y_train_pred = best_nb.predict(X_train)
     y_test_pred = best_nb.predict(X_test)
@@ -394,6 +423,8 @@ def naive_bayes(X_train, X_test, y_train, y_test):
 
     auc = fn.plot_roc_curve_with_auc(y_test, y_pred_proba, 'Naive Bayes')
     auc_ovo = fn.plot_roc_curve_with_auc_ovo(X_test, y_test, best_nb, 'Naive Bayes')
+    display_metrics_console(train_accuracy, test_accuracy, test_precision, test_recall, test_f1_score, test_specificity,
+                            auc, test_conf_mat)
 
     # print(f"\nBelow are the metrics for Naive Bayes Grid Search:\n")
     metrics.append( {
@@ -459,6 +490,9 @@ def neural_networks(X_train, X_test, y_train, y_test):
     train_accuracy = accuracy_score(y_train, best_mlp.predict(X_train))
     test_accuracy = accuracy_score(y_test, best_mlp.predict(X_test))
 
+    print(f"\nBest Parameters: {grid_search.best_params_}")
+    print(f"Best Estimator: {best_mlp}")
+
     y_train_pred = best_mlp.predict(X_train)
     y_test_pred = best_mlp.predict(X_test)
     y_pred_proba = best_mlp.predict_proba(X_test)
@@ -471,6 +505,9 @@ def neural_networks(X_train, X_test, y_train, y_test):
 
     auc = fn.plot_roc_curve_with_auc(y_test, y_pred_proba, 'Neural Networks')
     auc_ovo = fn.plot_roc_curve_with_auc_ovo(X_test, y_test, best_mlp, 'Neural Networks')
+
+    display_metrics_console(train_accuracy, test_accuracy, test_precision, test_recall, test_f1_score, test_specificity,
+                            auc, test_conf_mat)
 
     # print(f"\nBelow are the metrics for Neural Networks Grid Search:\n")
     metrics.append({
@@ -490,7 +527,7 @@ def neural_networks(X_train, X_test, y_train, y_test):
     })
 
     # print(metrics)
-    print(f"Neural Networks - Train Accuracy: {train_accuracy:.3f}")
+    print(f"\nNeural Networks - Train Accuracy: {train_accuracy:.3f}")
     print(f"Neural Networks - Test Accuracy: {test_accuracy:.3f}")
     end_time = datetime.now()
     print("\nNeural Networks Grid Search end-time:", end_time)
@@ -500,7 +537,6 @@ def neural_networks(X_train, X_test, y_train, y_test):
 
 
 def svm_classifier(X_train, X_test, y_train, y_test):
-
 
     scaler = StandardScaler()
     X_train = scaler.fit_transform(X_train)
@@ -522,6 +558,9 @@ def svm_classifier(X_train, X_test, y_train, y_test):
     train_accuracy = accuracy_score(y_train, best_svc.predict(X_train))
     test_accuracy = accuracy_score(y_test, best_svc.predict(X_test))
 
+    print(f"\nBest Parameters: {svm.best_params_}")
+    print(f"Best Estimator: {best_svc}")
+
     y_train_pred = best_svc.predict(X_train)
     y_test_pred = best_svc.predict(X_test)
     y_pred_proba = best_svc.predict_proba(X_test)
@@ -534,6 +573,8 @@ def svm_classifier(X_train, X_test, y_train, y_test):
 
     auc = fn.plot_roc_curve_with_auc(y_test, y_pred_proba, 'SVM')
     auc_ovo = fn.plot_roc_curve_with_auc_ovo(X_test, y_test, best_svc, 'SVM')
+    display_metrics_console(train_accuracy, test_accuracy, test_precision, test_recall, test_f1_score, test_specificity,
+                            auc, test_conf_mat)
 
     print(f"\nBelow are the metrics for SVM Grid Search:\n")
     metrics.append( {
@@ -553,90 +594,13 @@ def svm_classifier(X_train, X_test, y_train, y_test):
     })
 
     # print(metrics)
-    print(f"SVM - Train Accuracy: {train_accuracy:.3f}")
-    print(f"SVM - Test Accuracy: {test_accuracy:.3f}")
+    # print(f"SVM - Train Accuracy: {train_accuracy:.3f}")
+    # print(f"SVM - Test Accuracy: {test_accuracy:.3f}")
     end_time = datetime.now()
     print("\nSVM Grid Search end-time:", end_time)
     print("\nSVM Grid Search time taken:", end_time - start_time)
 
     return metrics
-
-
-# def svm_classifier(X_train, X_test, y_train, y_test):
-#     # Suppress unnecessary warnings
-#     warnings.filterwarnings('ignore', category=FutureWarning)
-#
-#     start_time = datetime.now()
-#     print("\nSVM Random Search Start-time:", start_time)
-#
-#     # Standardize the data
-#     # scaler = StandardScaler()
-#     # X_train = scaler.fit_transform(X_train)
-#     # X_test = scaler.transform(X_test)
-#     #
-#     # # Hyperparameters to tune
-#     # param_dist = {
-#     #     'C': [0.1, 1, 10, 100, 1000],  # Regularization parameter
-#     #     'kernel': ['linear']  # Linear kernel only
-#     # }
-#     #
-#     # # Use RandomizedSearchCV instead of GridSearchCV for faster hyperparameter tuning
-#     # svm = RandomizedSearchCV(SVC(probability=True, random_state=5805), param_distributions=param_dist, n_iter=10,
-#     #                          cv=5, scoring='accuracy', n_jobs=-1, verbose=0, random_state=5805)
-#     #
-#     # # Fit the model
-#     # svm.fit(X_train, y_train)
-#     #
-#     param_grid = {
-#         'C': [0.1, 1, 10],
-#         'kernel': ['linear', 'poly', 'rbf']
-#     }
-#     svm = GridSearchCV(SVC(probability=True, random_state=5805), param_grid, cv=StratifiedKFold(n_splits=5, shuffle=True, random_state=5805), scoring='accuracy')
-#     svm.fit(X_train, y_train)
-#     print(f"Best Parameters for SVM: {svm.best_params_}")
-#     # Best SVM model from RandomizedSearchCV
-#     best_svc = svm.best_estimator_
-#
-#     # Train and Test Accuracy
-#     train_accuracy = accuracy_score(y_train, best_svc.predict(X_train))
-#     test_accuracy = accuracy_score(y_test, best_svc.predict(X_test))
-#
-#     # Predictions and probabilities
-#     y_train_pred = best_svc.predict(X_train)
-#     y_test_pred = best_svc.predict(X_test)
-#     y_pred_proba = best_svc.predict_proba(X_test)
-#
-#     # Calculate Metrics and Plot Confusion Matrix
-#     train_precision, train_recall, train_accuracy, train_specificity, train_f1_score, train_conf_mat = fn.calculate_metrics_and_plot_confusion_matrix(
-#         y_train, y_train_pred, len(np.unique(y_train)), 'train', 'SVM')
-#     test_precision, test_recall, test_accuracy, test_specificity, test_f1_score, test_conf_mat = fn.calculate_metrics_and_plot_confusion_matrix(
-#         y_test, y_test_pred, len(np.unique(y_test)), 'test', 'SVM')
-#
-#     auc = fn.plot_roc_curve_with_auc(y_test, y_pred_proba, 'SVM')
-#
-#     print(f"\nBelow are the metrics for SVM Random Search:\n")
-#     metrics.append({
-#         'model': 'SVM Random Search',
-#         'Training Accuracy': train_accuracy,
-#         'Test Accuracy': test_accuracy,
-#         'Training Precision': train_precision,
-#         'Test Precision': test_recall,
-#         'AUC': auc,
-#         'Training Recall': train_recall,
-#         'Test Recall': test_recall,
-#         'Training Specificity': train_specificity,
-#         'Test Specificity': test_specificity,
-#         'Training F1 Score': train_f1_score,
-#         'Test F1 Score': test_f1_score,
-#         'Confusion Matrix': test_conf_mat
-#     })
-#
-#     # print(metrics)
-#     end_time = datetime.now()
-#     print("\nSVM Random Search end-time:", end_time)
-#     print("\nSVM Random Search time taken:", end_time - start_time)
-#
-#     return metrics
 
 #Function to perform Random forest classifier
 def random_forest(X_train, X_test, y_train, y_test):
@@ -667,8 +631,11 @@ def random_forest(X_train, X_test, y_train, y_test):
     train_accuracy = accuracy_score(y_train, best_rf.predict(X_train))
     test_accuracy = accuracy_score(y_test, best_rf.predict(X_test))
 
-    print(f"Random Forest - Train Accuracy: {train_accuracy:.3f}")
-    print(f"Random Forest - Test Accuracy: {test_accuracy:.3f}")
+    print(f"\nBest Parameters: {grid_search.best_params_}")
+    print(f"Best Estimator: {best_rf}")
+
+    # print(f"\nRandom Forest - Train Accuracy: {train_accuracy:.3f}")
+    # print(f"Random Forest - Test Accuracy: {test_accuracy:.3f}")
 
     y_train_pred = best_rf.predict(X_train)
     y_test_pred = best_rf.predict(X_test)
@@ -682,6 +649,8 @@ def random_forest(X_train, X_test, y_train, y_test):
 
     auc = fn.plot_roc_curve_with_auc(y_test, y_pred_proba, 'Random Forest')
     auc_ovo = fn.plot_roc_curve_with_auc_ovo(X_test, y_test, best_rf, 'Random Forest')
+    display_metrics_console(train_accuracy, test_accuracy, test_precision, test_recall, test_f1_score, test_specificity,
+                            auc, test_conf_mat)
 
     metrics.append({
         'model': 'Random Forest',
@@ -737,8 +706,11 @@ def random_forest_bagging(X_train, X_test, y_train, y_test):
     train_accuracy = accuracy_score(y_train, best_bagging.predict(X_train))
     test_accuracy = accuracy_score(y_test, best_bagging.predict(X_test))
 
-    print(f"Bagging - Train Accuracy: {train_accuracy:.3f}")
-    print(f"Bagging - Test Accuracy: {test_accuracy:.3f}")
+    print(f"\nBest Parameters: {grid_search.best_params_}")
+    print(f"Best Estimator: {best_bagging}")
+
+    # print(f"\nBagging - Train Accuracy: {train_accuracy:.3f}")
+    # print(f"Bagging - Test Accuracy: {test_accuracy:.3f}")
 
     y_train_pred = best_bagging.predict(X_train)
     y_test_pred = best_bagging.predict(X_test)
@@ -752,6 +724,8 @@ def random_forest_bagging(X_train, X_test, y_train, y_test):
 
     auc = fn.plot_roc_curve_with_auc(y_test, y_pred_proba, 'Bagging')
     auc_ovo = fn.plot_roc_curve_with_auc_ovo(X_test, y_test, best_bagging, 'Bagging')
+    display_metrics_console(train_accuracy, test_accuracy, test_precision, test_recall, test_f1_score, test_specificity,
+                            auc, test_conf_mat)
 
     metrics.append({
         'model': 'Bagging',
@@ -805,8 +779,11 @@ def random_forest_boosting(X_train, X_test, y_train, y_test):
     train_accuracy = accuracy_score(y_train, best_boosting.predict(X_train))
     test_accuracy = accuracy_score(y_test, best_boosting.predict(X_test))
 
-    print(f"Boosting - Train Accuracy: {train_accuracy:.3f}")
-    print(f"Boosting - Test Accuracy: {test_accuracy:.3f}")
+    print(f"\nBest Parameters: {grid_search.best_params_}")
+    print(f"Best Estimator: {best_boosting}")
+
+    # print(f"\nBoosting - Train Accuracy: {train_accuracy:.3f}")
+    # print(f"Boosting - Test Accuracy: {test_accuracy:.3f}")
 
     y_train_pred = best_boosting.predict(X_train)
     y_test_pred = best_boosting.predict(X_test)
@@ -820,6 +797,8 @@ def random_forest_boosting(X_train, X_test, y_train, y_test):
 
     auc = fn.plot_roc_curve_with_auc(y_test, y_pred_proba, 'Boosting')
     auc_ovo = fn.plot_roc_curve_with_auc_ovo(X_test, y_test, best_boosting, 'Boosting')
+    display_metrics_console(train_accuracy, test_accuracy, test_precision, test_recall, test_f1_score, test_specificity,
+                            auc, test_conf_mat)
 
     metrics.append({
         'model': 'Boosting',
@@ -874,8 +853,11 @@ def random_forest_stacking(X_train, X_test, y_train, y_test):
     train_accuracy = accuracy_score(y_train, best_stacking.predict(X_train))
     test_accuracy = accuracy_score(y_test, best_stacking.predict(X_test))
 
-    print(f"Stacking - Train Accuracy: {train_accuracy:.3f}")
-    print(f"Stacking - Test Accuracy: {test_accuracy:.3f}")
+    print(f"\nBest Parameters: {grid_search.best_params_}")
+    print(f"Best Estimator: {best_stacking}")
+
+    # print(f"\nStacking - Train Accuracy: {train_accuracy:.3f}")
+    # print(f"Stacking - Test Accuracy: {test_accuracy:.3f}")
 
     y_train_pred = best_stacking.predict(X_train)
     y_test_pred = best_stacking.predict(X_test)
@@ -889,6 +871,8 @@ def random_forest_stacking(X_train, X_test, y_train, y_test):
 
     auc = fn.plot_roc_curve_with_auc(y_test, y_pred_proba, 'Stacking')
     auc_ovo = fn.plot_roc_curve_with_auc_ovo(X_test, y_test, best_stacking, 'Stacking')
+    display_metrics_console(train_accuracy, test_accuracy, test_precision, test_recall, test_f1_score, test_specificity,
+                            auc, test_conf_mat)
 
     metrics.append({
         'model': 'Stacking',
