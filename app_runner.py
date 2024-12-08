@@ -1,5 +1,7 @@
 from datetime import datetime
 
+from matplotlib import pyplot as plt
+import seaborn as sns
 import exp_data_analysis as eda
 import numpy as np
 import regression_analysis as ra
@@ -28,7 +30,7 @@ def phase_1():
 
     data_cleaned.drop(columns=['status_estimated'], inplace=True)
     X = data_cleaned.drop(columns=target_col)
-    X.drop(columns=['arrival_minutes', 'delay_minutes'], inplace=True)
+    X.drop(columns=['arrival_minutes'], inplace=True)
     y = data_cleaned[target_col]
 
     y = y.replace({
@@ -115,7 +117,26 @@ def phase_1():
 
     balanced_df.drop(columns=['month', 'day', 'hour', 'day_of_week'], inplace=True)
     pre_processed_df.drop(columns=['month', 'day', 'hour', 'day_of_week'], inplace=True)
-    # eda.do_eda_profiling(data_cleaned)
+
+    corr_df=data_cleaned.select_dtypes(include=[np.number])
+    corr_matrix = corr_df.corr()
+
+    plt.figure(figsize=(12, 10))
+    sns.heatmap(
+        corr_matrix,
+        annot=False,
+        fmt=".2f",
+        cmap="coolwarm",
+        cbar_kws={'label': 'Correlation Values'},
+        xticklabels=corr_matrix.columns,
+        yticklabels=corr_matrix.index,
+        mask=np.eye(len(corr_matrix))
+    )
+    plt.tight_layout()
+    plt.title("Correlation Heatmap")
+    plt.show()
+
+    eda.do_eda_profiling(data_cleaned)
     print('-' * 50 + " End of Phase 1 " + '-' * 50)
     return balanced_df, pre_processed_df, data_cleaned
 
@@ -124,6 +145,7 @@ def phase_1():
 def phase_2(data_cleaned):
     # #Backward stepwise regression
     print('-' * 50 + " Phase 2 " + '-' * 50)
+    data_cleaned.drop(columns=['train_id'], inplace=True)
     ra.do_stepwise_regression(data_cleaned,'arrival_minutes')
     print('-' * 50 + " End of Phase 2 " + '-' * 50)
 

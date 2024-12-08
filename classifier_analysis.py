@@ -3,7 +3,7 @@ from sklearn.ensemble import RandomForestClassifier, BaggingClassifier, Gradient
 from sklearn.exceptions import ConvergenceWarning
 from sklearn.preprocessing import StandardScaler, MinMaxScaler
 from sklearn.tree import DecisionTreeClassifier
-from sklearn.model_selection import train_test_split,  StratifiedKFold
+from sklearn.model_selection import train_test_split, StratifiedKFold, cross_val_score
 from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
 from sklearn.model_selection import GridSearchCV
 import func as fn
@@ -34,24 +34,22 @@ def display_metrics():
 
     selected_columns = [
         'model', 'Training Accuracy', 'Test Accuracy',
-        'Test Precision', 'Test Recall',  'Test F1 Score', 'Test Specificity','AUC', 'Confusion Matrix'
+        'Precision', 'Recall',  'F1 Score', 'Specificity','AUC', 'Confusion Matrix'
     ]
-
-    # Extract only the selected columns from each dictionary
     filtered_metrics = [{key: value for key, value in metric.items() if key in selected_columns} for metric in metrics]
 
     metrics_table = tabulate(filtered_metrics, headers='keys', tablefmt='grid', floatfmt='.3f')
     print(metrics_table)
 
 def display_metrics_console(train_accuracy, test_accuracy, test_precision, test_recall, test_f1, test_specificity, test_auc, confusion_matrix):
-    print('\nTrain Accuracy:', train_accuracy)
-    print('Test Accuracy:', test_accuracy)
-    print('Precision:', test_precision)
-    print('Recall:', test_recall)
-    print('F1 Score:', test_f1)
-    print('Specificity:', test_specificity)
-    print('AUC:', test_auc)
-    print('Confusion Matrix\n', confusion_matrix)
+    print(f'\nTrain Accuracy: {train_accuracy:.3f}')
+    print(f'Test Accuracy: {test_accuracy:.3f}')
+    print(f'Precision: {test_precision:.3f}')
+    print(f'Recall: {test_recall:.3f}')
+    print(f'F1 Score: {test_f1:.3f}')
+    print(f'Specificity: {test_specificity:.3f}')
+    print(f'AUC: {test_auc:.3f}')
+    print(f'Confusion Matrix\n', confusion_matrix)
 
 #Function to perform pre-pruning decision tree
 def pre_pruning_dt(X_train, X_test, y_train, y_test):
@@ -68,17 +66,10 @@ def pre_pruning_dt(X_train, X_test, y_train, y_test):
         'max_features': [None, 'auto', 'sqrt', 'log2']
     }
 
-    # Initialize Decision Tree Classifier
     dt_pre_prune = DecisionTreeClassifier(random_state=5805)
-
-    # GridSearchCV for Pre-Pruning
     grid_search_pre_prune = GridSearchCV(dt_pre_prune, pre_prune_params, cv=cv, n_jobs=-1, verbose=1)
     grid_search_pre_prune.fit(X_train, y_train)
-
-    # Best model from grid search
     best_dt_pre_prune = grid_search_pre_prune.best_estimator_
-
-    # Train and Test Accuracy for Pre-Pruning
     train_accuracy_pre_prune = accuracy_score(y_train, best_dt_pre_prune.predict(X_train))
     test_accuracy_pre_prune = accuracy_score(y_test, best_dt_pre_prune.predict(X_test))
 
@@ -107,14 +98,14 @@ def pre_pruning_dt(X_train, X_test, y_train, y_test):
         'Training Accuracy': train_accuracy_pre,
         'Test Accuracy': test_accuracy_pre,
         'Training Precision': train_precision_pre,
-        'Test Precision': test_recall_pre,
+        'Precision': test_recall_pre,
         'AUC': auc,
         'Training Recall': train_recall_pre,
-        'Test Recall': test_recall_pre,
+        'Recall': test_recall_pre,
         'Training Specificity': train_specificity,
-        'Test Specificity': test_specificity,
+        'Specificity': test_specificity,
         'Training F1 Score': train_f1_score,
-        'Test F1 Score': test_f1_score,
+        'F1 Score': test_f1_score,
         'Confusion Matrix': test_conf_mat
     })
 
@@ -179,14 +170,14 @@ def post_pruning_dt(X_train, X_test, y_train, y_test):
         'Training Accuracy': train_accuracy_post,
         'Test Accuracy': test_accuracy_post,
         'Training Precision': train_precision_post,
-        'Test Precision': test_recall_post,
+        'Precision': test_recall_post,
         'AUC': auc,
         'Training Recall': train_recall_post,
-        'Test Recall': test_recall_post,
+        'Recall': test_recall_post,
         'Training Specificity': train_specificity,
-        'Test Specificity': test_specificity,
+        'Specificity': test_specificity,
         'Training F1 Score': train_f1_score,
-        'Test F1 Score': test_f1_score,
+        'F1 Score': test_f1_score,
         'Confusion Matrix': test_conf_mat
     })
 
@@ -217,16 +208,10 @@ def logistic_regression(X_train, X_test, y_train, y_test):
         'solver': ['liblinear', 'saga'],
         'max_iter': [500, 1000, 2000, 3000],
     }
-
-    # Initialize Logistic Regression Model
     log_reg = LogisticRegression(random_state=5805)
-
-    # GridSearchCV for Hyperparameter Tuning
     grid_search = GridSearchCV(estimator=log_reg, param_grid=param_grid, cv=cv, n_jobs=-1)
     grid_search.fit(X_train, y_train)
     grid_search.fit(X_train, y_train)
-
-    # Best Model from GridSearchCV
     best_log_reg = grid_search.best_estimator_
 
     # Train and Test Accuracy for Logistic Regression
@@ -259,14 +244,14 @@ def logistic_regression(X_train, X_test, y_train, y_test):
         'Training Accuracy': train_accuracy,
         'Test Accuracy': test_accuracy,
         'Training Precision': train_precision,
-        'Test Precision': test_recall,
+        'Precision': test_recall,
         'AUC': auc,
         'Training Recall': train_recall,
-        'Test Recall': test_recall,
+        'Recall': test_recall,
         'Training Specificity': train_specificity,
-        'Test Specificity': test_specificity,
+        'Specificity': test_specificity,
         'Training F1 Score': train_f1_score,
-        'Test F1 Score': test_f1_score,
+        'F1 Score': test_f1_score,
         'Confusion Matrix': test_conf_mat
     })
 
@@ -279,22 +264,14 @@ def logistic_regression(X_train, X_test, y_train, y_test):
 
 #Function to perform K-Nearest Neighbours
 def knn(X_train, X_test, y_train, y_test):
-    from sklearn.model_selection import cross_val_score
-    import matplotlib.pyplot as plt
-    import numpy as np
-    from datetime import datetime
-    from sklearn.neighbors import KNeighborsClassifier
-    from sklearn.metrics import accuracy_score
-    from sklearn.model_selection import GridSearchCV
 
-    # Find Optimal k
     print("\nFinding Optimal k...")
-    k_range = range(1, 31)  # Test k values from 1 to 30
+    k_range = range(1, 31)
     k_scores = []
 
     for k in k_range:
         knn = KNeighborsClassifier(n_neighbors=k)
-        scores = cross_val_score(knn, X_train, y_train, cv=cv, scoring='accuracy')  # 5-fold cross-validation
+        scores = cross_val_score(knn, X_train, y_train, cv=cv, scoring='accuracy')
         k_scores.append(scores.mean())
 
     # Plot k vs Accuracy
@@ -309,31 +286,19 @@ def knn(X_train, X_test, y_train, y_test):
 
     print("Optimal k:", k_range[np.argmax(k_scores)])
     print("Corresponding Accuracy:", max(k_scores))
-
-    # Original KNN Grid Search Functionality
     start_time = datetime.now()
     print("\nKNN Grid Search Start-time:", start_time)
-
-    # KNN Hyperparameters to tune
     param_grid = {
-        'n_neighbors': [3, 5, 7, 10, 15],  # Number of neighbors
-        'weights': ['uniform', 'distance'],  # Weight function used in prediction
-        'algorithm': ['auto', 'ball_tree', 'kd_tree', 'brute'],  # Algorithm for nearest neighbor search
-        'p': [1, 2],  # Power parameter for the Minkowski distance (1: Manhattan, 2: Euclidean)
-        'leaf_size': [20, 30, 40],  # Leaf size passed to BallTree or KDTree
+        'n_neighbors': [3, 5, 7, 10, 15],
+        'weights': ['uniform', 'distance'],
+        'algorithm': ['auto', 'ball_tree', 'kd_tree', 'brute'],
+        'p': [1, 2],
+        'leaf_size': [20, 30, 40],
     }
-
-    # Initialize KNeighborsClassifier
     knn = KNeighborsClassifier()
-
-    # GridSearchCV for Hyperparameter Tuning
     grid_search = GridSearchCV(estimator=knn, param_grid=param_grid, cv=cv, n_jobs=-1, verbose=1)
     grid_search.fit(X_train, y_train)
-
-    # Best Model from GridSearchCV
     best_knn = grid_search.best_estimator_
-
-    # Train and Test Accuracy for KNN
     train_accuracy = accuracy_score(y_train, best_knn.predict(X_train))
     test_accuracy = accuracy_score(y_test, best_knn.predict(X_test))
 
@@ -364,14 +329,14 @@ def knn(X_train, X_test, y_train, y_test):
         'Training Accuracy': train_accuracy,
         'Test Accuracy': test_accuracy,
         'Training Precision': train_precision,
-        'Test Precision': test_recall,
+        'Precision': test_recall,
         'AUC': auc,
         'Training Recall': train_recall,
-        'Test Recall': test_recall,
+        'Recall': test_recall,
         'Training Specificity': train_specificity,
-        'Test Specificity': test_specificity,
+        'Specificity': test_specificity,
         'Training F1 Score': train_f1_score,
-        'Test F1 Score': test_f1_score,
+        'F1 Score': test_f1_score,
         'Confusion Matrix': test_conf_mat
     })
 
@@ -386,23 +351,13 @@ def knn(X_train, X_test, y_train, y_test):
 def naive_bayes(X_train, X_test, y_train, y_test):
     start_time = datetime.now()
     print("\nNaive Bayes Grid Search Start-time:", start_time)
-
-    # Naive Bayes Hyperparameters to tune
     param_grid = {
-        'var_smoothing': [1e-9, 1e-8, 1e-7, 1e-6, 1e-5]  # Variance smoothing parameter to avoid divide by zero errors
+        'var_smoothing': [1e-9, 1e-8, 1e-7, 1e-6, 1e-5]
     }
-
-    # Initialize GaussianNB (Naive Bayes)
     nb = GaussianNB()
-
-    # GridSearchCV for Hyperparameter Tuning
     grid_search = GridSearchCV(estimator=nb, param_grid=param_grid, cv=cv, n_jobs=-1, verbose=1)
     grid_search.fit(X_train, y_train)
-
-    # Best Model from GridSearchCV
     best_nb = grid_search.best_estimator_
-
-    # Train and Test Accuracy for Naive Bayes
     train_accuracy = accuracy_score(y_train, best_nb.predict(X_train))
     test_accuracy = accuracy_score(y_test, best_nb.predict(X_test))
 
@@ -432,14 +387,14 @@ def naive_bayes(X_train, X_test, y_train, y_test):
         'Training Accuracy': train_accuracy,
         'Test Accuracy': test_accuracy,
         'Training Precision': train_precision,
-        'Test Precision': test_recall,
+        'Precision': test_recall,
         'AUC': auc,
         'Training Recall': train_recall,
-        'Test Recall': test_recall,
+        'Recall': test_recall,
         'Training Specificity': train_specificity,
-        'Test Specificity': test_specificity,
+        'Specificity': test_specificity,
         'Training F1 Score': train_f1_score,
-        'Test F1 Score': test_f1_score,
+        'F1 Score': test_f1_score,
         'Confusion Matrix': test_conf_mat
     })
 
@@ -453,40 +408,28 @@ def naive_bayes(X_train, X_test, y_train, y_test):
 #Function to perform Neural Networks - Multi Layered Perceptron
 def neural_networks(X_train, X_test, y_train, y_test):
 
-    # Suppress warnings
+
     warnings.filterwarnings('ignore', category=FutureWarning)
     warnings.filterwarnings('ignore', category=ConvergenceWarning)
     warnings.filterwarnings('ignore', category=RuntimeWarning)
 
     start_time = datetime.now()
     print("\nNeural Networks Grid Search Start-time:", start_time)
-
-    # Scaling the data
     scaler = StandardScaler()
     X_train = scaler.fit_transform(X_train)
     X_test = scaler.transform(X_test)
-
-    # Hyperparameters to tune
     param_grid = {
-        'hidden_layer_sizes': [(50,), (100,), (150,)],  # Fewer neuron options
-        'activation': ['relu', 'tanh'],  # Reduced activations
-        'solver': ['adam'],  # Faster optimizer
-        'learning_rate': ['constant', 'adaptive'],  # Fewer learning rates
-        'alpha': [0.0001, 0.001],  # Reduced range of regularization
-        'early_stopping': [True]  # Enable early stopping for faster convergence
+        'hidden_layer_sizes': [(50,), (100,), (150,)],
+        'activation': ['relu', 'tanh'],
+        'solver': ['adam'],
+        'learning_rate': ['constant', 'adaptive'],
+        'alpha': [0.0001, 0.001],
+        'early_stopping': [True]
     }
-
-    # Initialize MLPClassifier
     mlp = MLPClassifier(max_iter=500, random_state=5805)
-
-    # Use GridSearchCV for hyperparameter tuning
     grid_search = GridSearchCV(estimator=mlp, param_grid=param_grid, cv=cv, n_jobs=-1, verbose=1)
     grid_search.fit(X_train, y_train)
-
-    # Best Model from GridSearchCV
     best_mlp = grid_search.best_estimator_
-
-    # Train and Test Accuracy for MLP
     train_accuracy = accuracy_score(y_train, best_mlp.predict(X_train))
     test_accuracy = accuracy_score(y_test, best_mlp.predict(X_test))
 
@@ -515,14 +458,14 @@ def neural_networks(X_train, X_test, y_train, y_test):
         'Training Accuracy': train_accuracy,
         'Test Accuracy': test_accuracy,
         'Training Precision': train_precision,
-        'Test Precision': test_recall,
+        'Precision': test_recall,
         'AUC': auc,
         'Training Recall': train_recall,
-        'Test Recall': test_recall,
+        'Recall': test_recall,
         'Training Specificity': train_specificity,
-        'Test Specificity': test_specificity,
+        'Specificity': test_specificity,
         'Training F1 Score': train_f1_score,
-        'Test F1 Score': test_f1_score,
+        'F1 Score': test_f1_score,
         'Confusion Matrix': test_conf_mat
     })
 
@@ -582,14 +525,14 @@ def svm_classifier(X_train, X_test, y_train, y_test):
         'Training Accuracy': train_accuracy,
         'Test Accuracy': test_accuracy,
         'Training Precision': train_precision,
-        'Test Precision': test_recall,
+        'Precision': test_recall,
         'AUC': auc,
         'Training Recall': train_recall,
-        'Test Recall': test_recall,
+        'Recall': test_recall,
         'Training Specificity': train_specificity,
-        'Test Specificity': test_specificity,
+        'Specificity': test_specificity,
         'Training F1 Score': train_f1_score,
-        'Test F1 Score': test_f1_score,
+        'F1 Score': test_f1_score,
         'Confusion Matrix': test_conf_mat
     })
 
@@ -612,8 +555,6 @@ def random_forest(X_train, X_test, y_train, y_test):
 
     start_time = datetime.now()
     print("\nRandom Forest Grid Search Start-time:", start_time)
-
-    # Random Forest Hyperparameters to tune
     param_grid = {
         'n_estimators': [50, 100, 200],
         'max_depth': [10, 20, None],
@@ -657,14 +598,14 @@ def random_forest(X_train, X_test, y_train, y_test):
         'Training Accuracy': train_accuracy,
         'Test Accuracy': test_accuracy,
         'Training Precision': train_precision,
-        'Test Precision': test_recall,
+        'Precision': test_recall,
         'AUC': auc,
         'Training Recall': train_recall,
-        'Test Recall': test_recall,
+        'Recall': test_recall,
         'Training Specificity': train_specificity,
-        'Test Specificity': test_specificity,
+        'Specificity': test_specificity,
         'Training F1 Score': train_f1_score,
-        'Test F1 Score': test_f1_score,
+        'F1 Score': test_f1_score,
         'Confusion Matrix': test_conf_mat
     })
 
@@ -684,19 +625,13 @@ def random_forest_bagging(X_train, X_test, y_train, y_test):
 
     start_time = datetime.now()
     print("\nBagging Grid Search Start-time:", start_time)
-
-    # Hyperparameters to tune for BaggingClassifier
     param_grid = {
         'n_estimators': [10, 50, 100],
         'max_samples': [0.5, 0.75, 1.0],
         'max_features': [0.5, 0.75, 1.0],
-        'estimator__max_depth': [5, 10, None]  # Using `estimator` instead of `base_estimator`
+        'estimator__max_depth': [5, 10, None]
     }
-
-    # Initialize BaggingClassifier with DecisionTreeClassifier as estimator
     bagging = BaggingClassifier(estimator=DecisionTreeClassifier(), random_state=5805)
-
-    # GridSearchCV for hyperparameter tuning
     grid_search = GridSearchCV(estimator=bagging, param_grid=param_grid, cv=cv, n_jobs=-1)
     grid_search.fit(X_train, y_train)
 
@@ -732,14 +667,14 @@ def random_forest_bagging(X_train, X_test, y_train, y_test):
         'Training Accuracy': train_accuracy,
         'Test Accuracy': test_accuracy,
         'Training Precision': train_precision,
-        'Test Precision': test_recall,
+        'Precision': test_recall,
         'AUC': auc,
         'Training Recall': train_recall,
-        'Test Recall': test_recall,
+        'Recall': test_recall,
         'Training Specificity': train_specificity,
-        'Test Specificity': test_specificity,
+        'Specificity': test_specificity,
         'Training F1 Score': train_f1_score,
-        'Test F1 Score': test_f1_score,
+        'F1 Score': test_f1_score,
         'Confusion Matrix': test_conf_mat
     })
 
@@ -759,8 +694,6 @@ def random_forest_boosting(X_train, X_test, y_train, y_test):
 
     start_time = datetime.now()
     print("\nBoosting Grid Search Start-time:", start_time)
-
-    # Boosting Hyperparameters to tune
     param_grid = {
         'n_estimators': [50, 100, 200],
         'learning_rate': [0.01, 0.1, 0.2],
@@ -805,14 +738,14 @@ def random_forest_boosting(X_train, X_test, y_train, y_test):
         'Training Accuracy': train_accuracy,
         'Test Accuracy': test_accuracy,
         'Training Precision': train_precision,
-        'Test Precision': test_recall,
+        'Precision': test_recall,
         'AUC': auc,
         'Training Recall': train_recall,
-        'Test Recall': test_recall,
+        'Recall': test_recall,
         'Training Specificity': train_specificity,
-        'Test Specificity': test_specificity,
+        'Specificity': test_specificity,
         'Training F1 Score': train_f1_score,
-        'Test F1 Score': test_f1_score,
+        'F1 Score': test_f1_score,
         'Confusion Matrix': test_conf_mat
     })
 
@@ -832,8 +765,6 @@ def random_forest_stacking(X_train, X_test, y_train, y_test):
 
     start_time = datetime.now()
     print("\nStacking Grid Search Start-time:", start_time)
-
-    # Stacking Hyperparameters to tune
     param_grid = {
         'final_estimator__C': [0.1, 1, 10],
     }
@@ -879,14 +810,14 @@ def random_forest_stacking(X_train, X_test, y_train, y_test):
         'Training Accuracy': train_accuracy,
         'Test Accuracy': test_accuracy,
         'Training Precision': train_precision,
-        'Test Precision': test_recall,
+        'Precision': test_recall,
         'AUC': auc,
         'Training Recall': train_recall,
-        'Test Recall': test_recall,
+        'Recall': test_recall,
         'Training Specificity': train_specificity,
-        'Test Specificity': test_specificity,
+        'Specificity': test_specificity,
         'Training F1 Score': train_f1_score,
-        'Test F1 Score': test_f1_score,
+        'F1 Score': test_f1_score,
         'Confusion Matrix': test_conf_mat
     })
 

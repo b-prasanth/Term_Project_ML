@@ -4,19 +4,13 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import base64
 from io import BytesIO
-# from pandas_profiling import ProfileReport
+from pandas_profiling import ProfileReport
 from sklearn.cluster import DBSCAN
 from sklearn.decomposition import PCA, TruncatedSVD
 from sklearn.ensemble import RandomForestRegressor, RandomForestClassifier
-from sklearn.metrics import mean_squared_error
 from sklearn.model_selection import GridSearchCV, train_test_split
-import math
-import statsmodels.api as sm
 import func as fn
-from tabulate import tabulate
 from sklearn.preprocessing import LabelEncoder, StandardScaler
-from sklearn.covariance import EllipticEnvelope
-from sklearn.metrics import mean_squared_error, r2_score
 from statsmodels.stats.outliers_influence import variance_inflation_factor
 import warnings
 from imblearn.over_sampling import SMOTE
@@ -84,7 +78,7 @@ def do_vif(cleaned_dataset_encoded,target):
     return filtered_data, remove_data
 
 def do_svd(df2):
-    # Standardize the data for better performance of SVD
+
     ig_cols = ['status_departed', 'status_estimated', 'line_Bergen Co. Line', 'line_Gladstone Branch', 'line_Main Line',
                'line_Montclair-Boonton', 'line_Morristown Line', 'line_No Jersey Coast', 'line_Northeast Corrdr',
                'line_Pascack Valley', 'line_Princeton Shuttle', 'line_Raritan Valley']
@@ -118,6 +112,7 @@ def do_svd(df2):
 
     print(f"\nNumber of components explaining more than 95% variance: {n_components_95}")
     print(f"Selected Features: {list(selected_features)}")
+    fn.plt_svd(cumulative_variance, explained_variance,)
 
     return cumulative_variance, explained_variance, top_features
 
@@ -125,25 +120,15 @@ def anomaly_outlier(data):
 
 
     features_for_anomaly = ['delay_minutes', 'long_delay']
-
-    # Step 1: Standardize the features (important for DBSCAN)
-    data_anomaly = data[features_for_anomaly].dropna()  # Drop any missing values
+    data_anomaly = data[features_for_anomaly].dropna()
     scaler = StandardScaler()
     data_anomaly_scaled = scaler.fit_transform(data_anomaly)
-
-    # Step 2: Apply DBSCAN for anomaly detection
-    dbscan = DBSCAN(eps=0.5, min_samples=5)  # Adjust parameters as needed
+    dbscan = DBSCAN(eps=0.5, min_samples=5)
     dbscan_labels = dbscan.fit_predict(data_anomaly_scaled)
-
-    # Step 3: Add DBSCAN labels to the dataset
     data['DBSCAN_Label'] = dbscan_labels
-    data['DBSCAN_Outlier'] = dbscan_labels == -1  # Mark outliers with DBSCAN label -1
-
-    # Step 4: Count outliers
+    data['DBSCAN_Outlier'] = dbscan_labels == -1
     outlier_count = data['DBSCAN_Outlier'].sum()
     print(f"Number of outliers detected by DBSCAN: {outlier_count}")
-
-    # Step 5: Visualization of DBSCAN clustering
     plt.figure(figsize=(8, 6))
     plt.scatter(data['train_id'], data['delay_minutes'], c=dbscan_labels, cmap="viridis", label="Clusters")
     plt.scatter(data[data['DBSCAN_Outlier'] == True]['train_id'],
@@ -153,21 +138,23 @@ def anomaly_outlier(data):
     plt.ylabel("Delay Minutes")
     plt.legend()
     plt.show()
-
-    # Step 6: Remove outliers from the dataset
-    data_cleaned = data[~data['DBSCAN_Outlier']]  # Keep only non-outlier rows
-    data_cleaned = data_cleaned.drop(columns=["DBSCAN_Label", "DBSCAN_Outlier"])  # Drop helper columns
+    data_cleaned = data[~data['DBSCAN_Outlier']]
+    data_cleaned = data_cleaned.drop(columns=["DBSCAN_Label", "DBSCAN_Outlier"])
 
     print(f"Shape of dataset after removing outliers: {data_cleaned.shape}")
     return data_cleaned
+
+def eda_check_bal(y):
+    class_counts = y.value_counts()
+    proportions = class_counts / class_counts.sum()
+    print("\nClass Distribution:\n", class_counts)
+    fn.display_balance_plot(class_counts)
 
 
 def check_balance(y):
 
     class_counts = y.value_counts()
     proportions = class_counts / class_counts.sum()
-    # Display counts and proportion of each class
-    print("\nClass Distribution:\n", class_counts)
     if proportions.nunique() == 1:
         print("Class distribution is equal.")
         fn.display_balance_plot(class_counts)
@@ -183,7 +170,6 @@ def perform_balance(X,y):
     return X_resampled, y_resampled
 
 def evaluate_model(X_train_selected, X_test_selected, y_train, y_test):
-    """ Helper function to evaluate a model's performance. You can replace RandomForestClassifier with any model. """
     model = RandomForestClassifier(random_state=5805)
     model.fit(X_train_selected, y_train)
     accuracy = model.score(X_test_selected, y_test)
@@ -191,19 +177,33 @@ def evaluate_model(X_train_selected, X_test_selected, y_train, y_test):
 
 def load_data():
     data = pd.read_csv('2018_03.csv')
-
-    # print(data.dtypes)
-    # Convert time columns to datetime
+    print("First 5 rows of dataset:\n",data.head())
+    print("\nShape of dataset: ",data.shape)
+    print("\nNumber of Missing Observations:\n", data.isnull().sum())
     data['scheduled_time'] = pd.to_datetime(data['scheduled_time'], errors='coerce')
     data['actual_time'] = pd.to_datetime(data['actual_time'], errors='coerce')
     data['arrival_minutes'] = (data['actual_time'] - data['scheduled_time']).dt.total_seconds() / 60
     from_dict = dict(data[['from', 'from_id']].drop_duplicates().values)
     to_dict = dict(data[['to', 'to_id']].drop_duplicates().values)
 
+    target_col = 'arrival_status'
+    data['arrival_status'] = data['arrival_minutes'].apply(get_arrival_status)
+    X = data.drop(columns=target_col)
+    X.drop(columns=['arrival_minutes'], inplace=True)
+    y = data[target_col]
 
-    agg_data=result = data.groupby(["date", "train_id"]).agg(from_id=("from_id", "first"),to_id=("to_id", "last"),  # Last stop's `to_id`
-    scheduled_time=("scheduled_time", "last"),  # Scheduled time of the last stop
-    actual_time=("actual_time", "last") , # Actual time of the last stop
+    y = y.replace({
+        'early': 1,
+        'on-time': 2,
+        'late': 3
+    })
+
+    eda_check_bal(y)
+    data.drop(columns=target_col, inplace=True)
+
+    agg_data=result = data.groupby(["date", "train_id"]).agg(from_id=("from_id", "first"),to_id=("to_id", "last"),
+    scheduled_time=("scheduled_time", "last"),
+    actual_time=("actual_time", "last") ,
                                                              stop_sequence=("stop_sequence", "last"),
                                                              delay_minutes=("delay_minutes", "last"),
                                                              status=("status", "last"),line=("line", "last"),
@@ -237,21 +237,14 @@ def get_arrival_status(delay_minutes):
         return 'late'
 
 def clean_data(data):
-    # data1 = data
+
     data['arrival_status'] = data['arrival_minutes'].apply(get_arrival_status)
     data['time_of_day'] = data['scheduled_time'].dt.hour.apply(get_time_of_day)
-    # data.drop(columns=['delay_minutes'], inplace=True)
-    # cleaned_dataset = data.drop(columns=['from', 'to'])
-    # Drop rows with NaN values
     data_cleaned = data.dropna()
 
-    # Check for duplicates
     duplicates = data_cleaned.duplicated()
     print(f"Number of duplicate rows: {duplicates.sum()}")
-
-    # Drop duplicates
     data_cleaned = data_cleaned.drop_duplicates()
-    print(data_cleaned.head())
     return data_cleaned
 
 
@@ -347,7 +340,6 @@ def do_eda_profiling(data_cleaned):
     plt.tight_layout()
     plt.title("Covariance Heatmap")
 
-    # Save the heatmap to a base64-encoded image
     buffer = BytesIO()
     plt.savefig(buffer, format="png", bbox_inches="tight")
     buffer.seek(0)
